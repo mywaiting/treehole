@@ -2,7 +2,6 @@
 # 使用 tornado.httpclient 实现的 Github APIv3 异步客户端
 # 
 
-import datetime
 import json
 import logging
 import urllib.parse
@@ -160,53 +159,34 @@ class GithubClient:
 # models
 # 
 
-class GithubData:
-    def to_dict(self):
-        if hasattr(self, "_to_dict_data"):
-            return self._to_dict_data
-        
-        return {}
-
-    def iso_time_to_timestamp(self, iso_time):
-        """转换类似 2019-07-19T02:29:08Z 到默认的 UNIX 时间戳
-        """
-        # 注意：带 Z 结尾表示当前时间为 UTC
-        dt = datetime.datetime.strptime(iso_time, "%Y-%m-%dT%H:%M:%SZ")
-        # 注意：此处必须指定这是 UTC 时间，否则可能会默认使用本地时区
-        dt = dt.replace(tzinfo=datetime.timezone.utc)
-        # 返回默认时间戳
-        return int(dt.timestamp())
-
-
-class GithubIssue(GithubData):
+class GithubIssue(dict):
     """Github Issue 数据模型，方便转换到博客使用的数据类型
     """
     def __init__(self, issue: dict):
-        self.issue = issue
-        self._to_dict_data = {
-            "issue_url": issue.get("html_url"),
-            "issue_number": issue.get("number"),
-            # issue
-            "title": issue.get("title"),
-            "created_at": self.iso_time_to_timestamp(issue.get("created_at")),
-            "updated_at": self.iso_time_to_timestamp(issue.get("updated_at")),
-            "state": issue.get("state"),
-            "body": issue.get("body"),
-            "body_html": issue.get("body_html"),
-            # labels
-            "labels": [ GithubLabel(label).to_dict() for label in issue.get("labels") ],
-            # reactions
-            "reactions": GithubReactions(issue.get("reactions")).to_dict(),
-            # user
-            "user": GithubUser(issue.get("user")).to_dict()
-        }
+        self._origin_data = issue
+
+        self["issue_url"] = issue.get("html_url")
+        self["issue_number"] = issue.get("number")
+        # issue
+        self["title"] = issue.get("title"),
+        self["created_at"] = issue.get("created_at")
+        self["updated_at"] = issue.get("updated_at")
+        self["state"] = issue.get("state")
+        self["body"] = issue.get("body")
+        self["body_html"] = issue.get("body_html")
+        # labels
+        self["labels"] = [ dict(GithubLabel(label)) for label in issue.get("labels") ]
+        # reactions
+        self["reactions"] = dict(GithubReactions(issue.get("reactions")))
+        # user
+        self["user"] = dict(GithubUser(issue.get("user")))
 
 
-class GithubComment(GithubData):
+class GithubComment(dict):
     """Github Issue Comment 数据模型，方便转换到博客使用的数据类型
     """
     def __init__(self, comment: dict):
-        self.comment = comment
+        self._origin_data = comment
 
         # https://api.github.com/repos/[owner]/[repo]/issues/[issue_number]
         # 注意：此处是直接替换得到对应 issue 网页版本的链接
@@ -214,61 +194,56 @@ class GithubComment(GithubData):
         # 注意：此处是直接按 /issues/ 分割字符串得到对应的 issue_number
         _, issue_number = issue_url.split("/issues/", 1)
 
-        self._to_dict_data = {
-            # issue
-            "isuue_url": issue_url,
-            "issue_number": issue_number,
-            # comment
-            "comment_url": comment.get("html_url"),
-            "comment_id": comment.get("id"),
-            "created_at": self.iso_time_to_timestamp(comment.get("created_at")),
-            "updated_at": self.iso_time_to_timestamp(comment.get("updated_at")),
-            "body": comment.get("body"),
-            "body_html": comment.get("body_html"),
-            # reactions
-            "reactions": GithubReactions(comment.get("reactions")).to_dict(),
-            # user
-            "user": GithubUser(comment.get("user")).to_dict()
-        }
+        # issue
+        self["isuue_url"] = issue_url
+        self["issue_number"] = issue_number
+        # comment
+        self["comment_url"] = comment.get("html_url")
+        self["comment_id"] = comment.get("id")
+        self["created_at"] = comment.get("created_at")
+        self["updated_at"] = comment.get("updated_at")
+        self["body"] = comment.get("body")
+        self["body_html"] = comment.get("body_html")
+        # reactions
+        self["reactions"] = dict(GithubReactions(comment.get("reactions")))
+        # user
+        self["user"] = dict(GithubUser(comment.get("user")))
 
 
-class GithubLabel(GithubData):
+class GithubLabel(dict):
     """Github Issue Label 数据模型，方便转换到博客使用的数据类型
     """
     def __init__(self, label: dict):
-        self.label = label
-        self._to_dict_data = {
-            "name": label.get("name"),
-            "color": label.get("color"),
-            "description": label.get("description")
-        }
+        self._origin_data = label
+        
+        self["name"] = label.get("name"),
+        self["color"] = label.get("color"),
+        self["description"] = label.get("description")
 
 
-class GithubReactions(GithubData):
+class GithubReactions(dict):
     """Github Issue Reactions 数据模型，方便转换到博客使用的数据类型
     """
     def __init__(self, reactions: dict):
-        self.reactions = reactions
-        self._to_dict_data = {
-            "+1": reactions.get("+1"),
-            "-1": reactions.get("-1"),
-            "laugh": reactions.get("laugh"),
-            "hooray": reactions.get("hooray"),
-            "confused": reactions.get("confused"),
-            "heart": reactions.get("heart"),
-            "rocket": reactions.get("rocket"),
-            "eyes": reactions.get("eyes")
-        }
+        self._origin_data = reactions
+
+        self["+1"] = reactions.get("+1")
+        self["-1"] = reactions.get("-1")
+        self["laugh"] = reactions.get("laugh")
+        self["hooray"] = reactions.get("hooray")
+        self["confused"] = reactions.get("confused")
+        self["heart"] = reactions.get("heart")
+        self["rocket"] = reactions.get("rocket")
+        self["eyes"] = reactions.get("eyes")    
 
 
-class GithubUser(GithubData):
+class GithubUser(dict):
     """Github User 数据模型，方便转换到博客使用的数据类型
     """
     def __init__(self, user: dict):
-        self.user = user
-        self._to_dict_data = {
-            "login": user.get("user"),
-            "avatar_url": user.get("avatar_url"),
-            "user_url": user.get("html_url")
-        }
+        self._origin_data = user
+
+        self["login"] = user.get("login")
+        self["avatar_url"] = user.get("avatar_url")
+        self["user_url"] = user.get("html_url")
 
