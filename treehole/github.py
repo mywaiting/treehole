@@ -2,6 +2,7 @@
 # 使用 tornado.httpclient 实现的 Github APIv3 异步客户端
 # 
 
+import datetime
 import json
 import logging
 import urllib.parse
@@ -15,7 +16,13 @@ logger = logging.getLogger("treehole")
 
 
 
-class Github:
+# 
+# client
+# 
+
+class GithubClient:
+    """Github API Client
+    """
     base_url = "https://api.github.com"
     user_agent = "python-github-client"
     api_version = "2022-11-28"
@@ -73,7 +80,7 @@ class Github:
             for issue in issues:
                 yield issue
 
-            links = parse_header_links(response.headers)
+            links = self.parse_header_links(response.headers)
             # 注意：如果存在 next 说明还有下一页，否则不存在下一页
             # 注意：此处 next 对应的链接已经包含 params 无需再单独指定
             if "next" in links:
@@ -121,7 +128,7 @@ class Github:
             for issue in issues:
                 yield issue
 
-            links = parse_header_links(response.headers)
+            links = self.parse_header_links(response.headers)
             # 注意：如果存在 next 说明还有下一页，否则不存在下一页
             # 注意：此处 next 对应的链接已经包含 params 无需再单独指定
             if "next" in links:
@@ -131,25 +138,137 @@ class Github:
             else:
                 break
 
+    def parse_header_links(self, headers: tornado.httputil.HTTPHeaders):
+        """Github 使用 link Headers 作为分页链接，此处为解析过程
+
+        docs: https://docs.github.com/rest/using-the-rest-api/using-pagination-in-the-rest-api
+        """
+        links = {} # prev/next/first/last
+        if headers and "link" in headers and isinstance(headers["link"], str):
+            link_headers = headers["link"].split(", ")
+            for link_header in link_headers:
+                url, rel, *rest = link_header.split("; ")
+                url = url[1:-1]
+                rel = rel[5:-1]
+                links[rel] = url
+        
+        return links
+
 
 
 # 
-# utils
+# models
 # 
 
-def parse_header_links(headers: tornado.httputil.HTTPHeaders):
-    """Github 使用 link Headers 作为分页链接，此处为解析过程
+class GithubData:
+    def to_dict(self):
+        if hasattr(self, "_to_dict_data"):
+            return self._to_dict_data
+        
+        return {}
 
-    docs: https://docs.github.com/rest/using-the-rest-api/using-pagination-in-the-rest-api
+    def iso_time_to_timestamp(self, iso_time):
+        """转换类似 2019-07-19T02:29:08Z 到默认的 UNIX 时间戳
+        """
+        # 注意：带 Z 结尾表示当前时间为 UTC
+        dt = datetime.datetime.strptime(iso_time, "%Y-%m-%dT%H:%M:%SZ")
+        # 注意：此处必须指定这是 UTC 时间，否则可能会默认使用本地时区
+        dt = dt.replace(tzinfo=datetime.timezone.utc)
+        # 返回默认时间戳
+        return int(dt.timestamp())
+
+
+class GithubIssue(GithubData):
+    """Github Issue 数据模型，方便转换到博客使用的数据类型
     """
-    links = {} # prev/next/first/last
-    if headers and "link" in headers and isinstance(headers["link"], str):
-        link_headers = headers["link"].split(", ")
-        for link_header in link_headers:
-            url, rel, *rest = link_header.split("; ")
-            url = url[1:-1]
-            rel = rel[5:-1]
-            links[rel] = url
-    
-    return links
+    def __init__(self, issue: dict):
+        self.issue = issue
+        self._to_dict_data = {
+            "issue_url": issue.get("html_url"),
+            "issue_number": issue.get("number"),
+            # issue
+            "title": issue.get("title"),
+            "created_at": self.iso_time_to_timestamp(issue.get("created_at")),
+            "updated_at": self.iso_time_to_timestamp(issue.get("updated_at")),
+            "state": issue.get("state"),
+            "body": issue.get("body"),
+            "body_html": issue.get("body_html"),
+            # labels
+            "labels": [ GithubLabel(label).to_dict() for label in issue.get("labels") ],
+            # reactions
+            "reactions": GithubReactions(issue.get("reactions")).to_dict(),
+            # user
+            "user": GithubUser(issue.get("user")).to_dict()
+        }
+
+
+class GithubComment(GithubData):
+    """Github Issue Comment 数据模型，方便转换到博客使用的数据类型
+    """
+    def __init__(self, comment: dict):
+        self.comment = comment
+
+        # https://api.github.com/repos/[owner]/[repo]/issues/[issue_number]
+        # 注意：此处是直接替换得到对应 issue 网页版本的链接
+        issue_url = comment.get("issue_url").replace("https://api.github.com/repos/", "https://github.com/")
+        # 注意：此处是直接按 /issues/ 分割字符串得到对应的 issue_number
+        _, issue_number = issue_url.split("/issues/", 1)
+
+        self._to_dict_data = {
+            # issue
+            "isuue_url": issue_url,
+            "issue_number": issue_number,
+            # comment
+            "comment_url": comment.get("html_url"),
+            "comment_id": comment.get("id"),
+            "created_at": self.iso_time_to_timestamp(comment.get("created_at")),
+            "updated_at": self.iso_time_to_timestamp(comment.get("updated_at")),
+            "body": comment.get("body"),
+            "body_html": comment.get("body_html"),
+            # reactions
+            "reactions": GithubReactions(comment.get("reactions")).to_dict(),
+            # user
+            "user": GithubUser(comment.get("user")).to_dict()
+        }
+
+
+class GithubLabel(GithubData):
+    """Github Issue Label 数据模型，方便转换到博客使用的数据类型
+    """
+    def __init__(self, label: dict):
+        self.label = label
+        self._to_dict_data = {
+            "name": label.get("name"),
+            "color": label.get("color"),
+            "description": label.get("description")
+        }
+
+
+class GithubReactions(GithubData):
+    """Github Issue Reactions 数据模型，方便转换到博客使用的数据类型
+    """
+    def __init__(self, reactions: dict):
+        self.reactions = reactions
+        self._to_dict_data = {
+            "+1": reactions.get("+1"),
+            "-1": reactions.get("-1"),
+            "laugh": reactions.get("laugh"),
+            "hooray": reactions.get("hooray"),
+            "confused": reactions.get("confused"),
+            "heart": reactions.get("heart"),
+            "rocket": reactions.get("rocket"),
+            "eyes": reactions.get("eyes")
+        }
+
+
+class GithubUser(GithubData):
+    """Github User 数据模型，方便转换到博客使用的数据类型
+    """
+    def __init__(self, user: dict):
+        self.user = user
+        self._to_dict_data = {
+            "login": user.get("user"),
+            "avatar_url": user.get("avatar_url"),
+            "user_url": user.get("html_url")
+        }
 
