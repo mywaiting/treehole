@@ -12,7 +12,11 @@ define("debug", type=bool, default=True)
 define("config", type=str)
 define("default_locale", type=str, default="zh")
 define("locale_domain", type=str, default="treehole")
-define("output_dir", type=str, default="./output")
+define("base_url", type=str, default="https://treehole.io")
+define("title", type=str, default="Treehole")
+define("description", type=str, default="Microblog platform based Github issues")
+define("data_path", type=str, default="./data")
+
 
 
 base_dir = os.path.dirname(__file__)
@@ -34,13 +38,6 @@ def main():
             tornado.options.parse_config_file(default_settings)
         else:
             logger.info(f"no default_settings parsed")
-    
-    # loaded local_settings.py
-    local_settings = os.path.join(base_dir, "local_settings.py")
-    if os.path.exists(local_settings):
-        tornado.options.parse_config_file(local_settings, final=True)
-    else:
-        logger.info(f"no local_settings parsed")
     
     # 由于需要首先 parse_command_line/parse_config_file 才能得到完整的 options
     # 此处需要根据 debug 情况重新设置 logger.setLevel 的情况，否则全局日志无法打印

@@ -24,7 +24,7 @@ def fwrite(filepath, text):
         fd.write(text)
 
 
-def form_iso8601_date(iso8601_date: str):
+def from_iso8601_date(iso8601_date: str):
     """转换类似 2019-07-19T02:29:08Z/github 默认返回此类型数据 到 datetime 对象
     """
     dt = datetime.datetime.strptime(iso8601_date, "%Y-%m-%dT%H:%M:%SZ") # 带 Z 结尾表示当前时间为 UTC
@@ -67,26 +67,26 @@ class AtomFeedGenerator:
     
     def generate(self):
         buffer = io.StringIO()
-        xml = xml.sax.saxutils.XMLGenerator(buffer, encoding='utf-8')
-        xml.startDocument()
-        xml.startElement("feed", {"xmlns": self.ns})
+        doc = xml.sax.saxutils.XMLGenerator(buffer, encoding='utf-8')
+        doc.startDocument()
+        doc.startElement("doc", {"xmlns": self.ns})
 
         # Feed metadata
-        self._write_text_element(xml, "title", self.title)
-        self._write_text_element(xml, "id", self.feed_id)
-        self._write_text_element(xml, "updated", self.updated)
+        self._write_text_element(doc, "title", self.title)
+        self._write_text_element(doc, "id", self.doc_id)
+        self._write_text_element(doc, "updated", self.updated)
 
         # Entries
         for entry in self.entries:
-            xml.startElement("entry", {})
-            self._write_text_element(xml, "title", entry["title"])
-            self._write_text_element(xml, "id", entry["id"])
-            self._write_text_element(xml, "updated", entry["updated"])
-            self._write_text_element(xml, "content", entry["content"], attrs={"type": "text"})
-            xml.endElement("entry")
+            doc.startElement("entry", {})
+            self._write_text_element(doc, "title", entry["title"])
+            self._write_text_element(doc, "id", entry["id"])
+            self._write_text_element(doc, "updated", entry["updated"])
+            self._write_text_element(doc, "content", entry["content"], attrs={"type": "text"})
+            doc.endElement("entry")
 
-        xml.endElement("feed")
-        xml.endDocument()
+        doc.endElement("doc")
+        doc.endDocument()
         return buffer.getvalue()
 
     def _write_text_element(self, xml, name, text, attrs=None):
