@@ -1,0 +1,33 @@
+
+{% block title %}{{ title }}{% end %}
+{% block description %}{% end %}
+
+{% block page_class %}{{ archive }}{% end %}
+
+{% block main %}
+<h1>{{ title }}</h1>
+<!-- IndexArchive -->
+<!-- 按日列出最新三篇文章列表（标题、日期、文章全部文本、精简标签显示） -->
+{% if archive == 'index' %}
+
+{% end %}
+<!-- DailyArchive -->
+<!-- 按日列出全部的文章列表（标题、日期、文章截断长文本、精简标签显示） -->
+{% if archive == 'daily' %}
+
+{% end %}
+<!-- MonthlyArchive -->
+<!-- 按日列出对应月份的文章列表（标题、日期、文章截断短文本、精简标签显示） -->
+{% if archive == 'monthly' %}
+
+{% end %}
+<!-- YearlyArchive -->
+<!-- 按月份列出对应年份的文章列表（标题、日期） -->
+{% if archive == 'yearly' %}
+<ul>
+    {% for %}
+</ul>
+{% end %}
+{% end %}
+
+{% block side %}{% end %}

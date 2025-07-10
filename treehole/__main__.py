@@ -1,0 +1,57 @@
+import logging
+import os.path
+
+import tornado.log
+import tornado.options
+
+from tornado.options import define, options
+
+
+
+define("debug", type=bool, default=True)
+define("config", type=str)
+define("default_locale", type=str, default="zh")
+define("locale_domain", type=str, default="treehole")
+define("output_dir", type=str, default="./output")
+
+
+base_dir = os.path.dirname(__file__)
+logger = logging.getLogger("treehole")
+
+
+
+
+
+def main():
+    tornado.options.parse_command_line()
+
+    # loaded default_settings.py
+    if options.config:
+        tornado.options.parse_config_file(options.config)
+    else:
+        default_settings = os.path.join(base_dir, "settings.py")
+        if os.path.exists(default_settings):
+            tornado.options.parse_config_file(default_settings)
+        else:
+            logger.info(f"no default_settings parsed")
+    
+    # loaded local_settings.py
+    local_settings = os.path.join(base_dir, "local_settings.py")
+    if os.path.exists(local_settings):
+        tornado.options.parse_config_file(local_settings, final=True)
+    else:
+        logger.info(f"no local_settings parsed")
+    
+    # 由于需要首先 parse_command_line/parse_config_file 才能得到完整的 options
+    # 此处需要根据 debug 情况重新设置 logger.setLevel 的情况，否则全局日志无法打印
+    if options.debug:
+        logger.warning(f"Server runas DEBUG mode")
+        options.logging = "DEBUG"
+        tornado.log.enable_pretty_logging(options)
+
+    # loaded gettext/locale translations
+    tornado.locale.load_gettext_translations(os.path.join(base_dir, "locale"), options.locale_domain)
+    tornado.locale.set_default_locale(options.default_locale)
+
+
+main()
