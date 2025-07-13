@@ -1,7 +1,11 @@
+import asyncio
 import collections
 import datetime
+import json
 import logging
-
+import os
+import os.path
+import shutil
 
 import tornado.locale
 import tornado.template
@@ -88,8 +92,6 @@ class TreeHolePost(dict):
 class IndexArchive:
     """首页输出最新三篇文章/内容列表归档实现，按日列出最新三篇文章列表（标题、日期、文章全部文本、精简标签显示）
     """
-    template_name = "list.html"
-
     def __init__(self, posts: list[TreeHolePost]):
         self.posts = list(posts)
 
@@ -117,8 +119,6 @@ class IndexArchive:
 class DailyArchive:
     """按天文章列表归档实现，按日列出全部的文章列表（标题、日期、文章截断长文本、精简标签显示）
     """
-    template_name = "list.html"
-
     def __init__(self, posts: list[TreeHolePost]):
         self.posts = list(posts)
 
@@ -293,8 +293,6 @@ class YearlyArchive:
 class PostArchive:
     """按单一博客文章归档实现
     """
-    template_name = "post.html"
-
     def __init__(self, posts: list[TreeHolePost]):
         self.posts = list(posts)
 
@@ -400,8 +398,58 @@ class FeedArchive:
 class TreeHoleApp:
     def __init__(self, **settings):
         self.settings = settings
+        
+        if self.settings.get("cache_data", True):
+            self.settings.setdefault("cache_issues", os.path.join(self.settings.get("data_path"), "_issues.json"))
+            self.settings.setdefault("cache_comments", os.path.join(self.settings.get("data_path"), "_comments.json"))
 
-    def render_string(self, template_name: str, **kwargs):
+    def clean_up(self):
+        output_dir = os.path.join(self.settings.get("data_path"), "output")
+        for rel_path in os.listdir(output_dir):
+            path = os.path.join(output_dir, rel_path)
+            if os.path.isdir(path):
+                shutil.rmtree(path, ignore_errors=True)
+            else:
+                try:
+                    os.remove(path)
+                except Exception as e:
+                    logger.exception(f'no delete: {path}, exception: {e}')
+    
+    def load_data(self):
+        """加载数据
+        - debug 状态而且 ./data 目录有对应文件，那么从本地加载数据
+        - 否则从 github 加载数据
+        """
+        if (self.settings.get("debug") and 
+            os.path.exists(self.settings.get("cache_issues")) and 
+            os.path.exists(self.settings.get("cache_comments"))
+        ):
+            issues = json.load(self.settings.get("cache_issues"))
+            comments = json.load(self.settings.get("cache_comments"))
+        else:
+            owner = self.settings.get("github_owner")
+            repo = self.settings.get("github_repo")
+            token = self.settings.get("github_token")
+
+            client = GithubClient(token)
+            get_repo_issues = lambda: client.get_repo_issues(owner, repo)
+            get_repo_comments = lambda: client.get_issue_comments(owner, repo)
+
+            # 异步函数转同步执行，更加方便
+            loop = asyncio.get_event_loop()
+            issues = loop.run_until_complete(get_repo_issues)
+            comments = loop.run_until_complete(get_repo_comments)
+
+            # 调试状态下缓存数据
+            if self.debug:
+                with open(self.settings.get("cache_issues"), "w") as fd:
+                    json.dump(issues, fd, ensure_ascii=False, indent=2)
+                with open(self.settings.get("cache_comments"), "w") as fd:
+                    json.dump(comments, fd, ensure_ascii=False, indent=2)
+
+        return (issues, comments)
+
+    def render(self, template_name: str, **kwargs):
         template_path = self.settings.get("template_path")
         template_kwargs = {
             "autoescape": True,

@@ -6,6 +6,8 @@ import tornado.options
 
 from tornado.options import define, options
 
+from .treehole import TreeHoleApp
+
 
 
 define("debug", type=bool, default=True)
@@ -16,6 +18,9 @@ define("base_url", type=str, default="https://treehole.io")
 define("title", type=str, default="Treehole")
 define("description", type=str, default="Microblog platform based Github issues")
 define("data_path", type=str, default="./data")
+define("github_owner", type=str)
+define("github_repo", type=str)
+define("github_token", type=str)
 
 
 
