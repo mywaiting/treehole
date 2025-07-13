@@ -3,25 +3,32 @@
 # 
 
 import datetime
+import html.parser
 import io
-import os
 import os.path
+import re
+import string
+import unicodedata
 import xml.sax.saxutils
 
 
 
-def fread(filepath):
-    with open(filepath, "rt") as fd:
-        return fd.read()
+def slugify(value="", allow_unicode=False):
+    """返回符合 URL要求的 slug url 格式 
+    该函数抄袭自 django.utils.text.slugify 的实现
 
-
-def fwrite(filepath, text):
-    base_dir = os.path.basename(filepath)
-    if not os.path.isdir(base_dir):
-        os.makedirs(base_dir, exist_ok=True)
-
-    with open(filepath, "wt") as fd:
-        fd.write(text)
+    Convert to ASCII if 'allow_unicode' is False. Convert spaces or repeated
+    dashes to single dashes. Remove characters that aren't alphanumerics,
+    underscores, or hyphens. Convert to lowercase. Also strip leading and
+    trailing whitespace, dashes, and underscores.
+    """
+    value = str(value)
+    if allow_unicode:
+        value = unicodedata.normalize('NFKC', value)
+    else:
+        value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
+    value = re.sub(r'[^\w\s-]', '', value.lower())
+    return re.sub(r'[-\s]+', '-', value).strip('-_')
 
 
 def from_iso8601_date(iso8601_date: str):
@@ -40,6 +47,22 @@ def to_rfc3389_date(dt: datetime.datetime):
         dt = dt.replace(tzinfo=datetime.timezone.utc)  # 默认为 UTC
     return dt.isoformat().replace('+00:00', 'Z')
 
+
+def has_chinese(text: str):
+    """检测传入的字符串是否存在中文
+    """
+    if re.match(r'[\u4E00-\u9FFF\u3400-\u4DBF\u20000-\u2A6DF\u2A700-\u2B73F\u2B740-\u2B81F\u2B820-\u2CEAF]', text):
+        return True
+    return False
+
+
+def only_english(text: str):
+    """是否只存在英文，包括英文符号/标点/数字
+    """
+    allowed_chars = set(
+        string.ascii_letters + string.punctuation + string.whitespace + string.digits
+    )
+    return all(c in allowed_chars for c in text)
 
 
 class AtomFeedGenerator:
@@ -94,4 +117,53 @@ class AtomFeedGenerator:
         xml.startElement(name, attrs)
         xml.characters(text)
         xml.endElement(name)
+
+
+class H1AndImageExtractor(html.parser.HTMLParser):
+    """遍历并提取全部 HTML 中的 H1/IMG/P 对应的内容并输出为列表
+
+    使用方法：
+        parser = H1AndImageExtractor()
+        parser.feed("__HTML_HERE__")
+        parser.close()
+        print("Titles:", parser.titles)
+        print("Images:", parser.images)
+        print("Paragraphs:", parser.paragraphs)
+    """
+    def __init__(self):
+        super().__init__()
+        self.in_h1 = False
+        self.in_p = False
+        self.current_text = ""
+
+        self.titles = []
+        self.images = []
+        self.paragraphs = []
+    
+    def handle_starttag(self, tag, attrs):
+        if tag == 'h1':
+            self.in_h1 = True
+            self.current_text = ''
+        elif tag == 'p':
+            self.in_p = True
+            self.current_text = ''
+        elif tag == 'img':
+            attrs_dict = dict(attrs)
+            src = attrs_dict.get('src')
+            if src:
+                self.images.append(src)
+
+    def handle_endtag(self, tag):
+        if tag == 'h1' and self.in_h1:
+            self.in_h1 = False
+            self.titles.append(self.current_text.strip())
+        elif tag == 'p' and self.in_p:
+            text = self.current_text.strip()
+            if text:
+                self.paragraphs.append(text)
+            self.in_p = False
+
+    def handle_data(self, data):
+        if self.in_h1 or self.in_p:
+            self.current_text += data
 
