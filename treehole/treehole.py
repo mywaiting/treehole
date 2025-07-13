@@ -89,6 +89,30 @@ class TreeHolePost(dict):
         self["user"] = dict(post.get("user"))
 
 
+class TreeHoleComment(dict):
+    """TreeHole Comment 单一评论数据模型
+    """
+    def __init__(self, comment: dict):
+        self._origin_data = comment # type: dict[GithubComment]
+
+        self["post_id"] = comment.get("issue_number")      # 原始 issue 序列号
+        self["post_source_url"] = comment.get("issue_url") # 原始 issue 链接
+
+        self["id"] = comment.get("comment_id")
+        self["source_url"] = comment.get("comment_url") # 当前 comment 原始链接
+
+        self["created_at"] = comment.get("created_at")
+        self["updated_at"] = comment.get("updated_at")
+        self["body"] = comment.get("body")
+        self["body_html"] = comment.get("body_html")
+        self["reactions"] = dict(comment.get("reactions"))
+        self["user"] = dict(comment.get("user"))
+
+
+# 
+# iters
+# 
+
 class IndexArchive:
     """首页输出最新三篇文章/内容列表归档实现，按日列出最新三篇文章列表（标题、日期、文章全部文本、精简标签显示）
     """
@@ -293,8 +317,22 @@ class YearlyArchive:
 class PostArchive:
     """按单一博客文章归档实现
     """
-    def __init__(self, posts: list[TreeHolePost]):
+    def __init__(self, posts: list[TreeHolePost], comments: list[TreeHoleComment]):
         self.posts = list(posts)
+        self.comments = list(comments)
+
+        # 短暂为所有 comments 增加单独的 _datetime 字段用于排序和输出，避免重复转换
+        for comment in self.comments:
+            comment["_datetime"] = from_iso8601_date(comment.get("created_at"))
+
+        # 全部 comments 按照时间从最新到最旧排序，此处原地排序/逆序
+        self.comments.sort(key=lambda comment: comment["_datetime"], reverse=True)
+
+        # 直接遍历处理得到所有按照 issue_number 的评论序列
+        comments_maps = collections.defaultdict(list)
+        for comment in self.comments:
+            comments_maps[comment.get("post_id")].append(comment)
+
 
         # 短暂为所有 posts 增加单独的 _datetime 字段用于排序和输出，避免重复转换
         for post in self.posts:
@@ -355,6 +393,7 @@ class PostArchive:
                 "prev_post": prev_post,
                 "next_post": next_post,
                 "related_posts": related_posts, # 根据 labels 计算得到的相似文章
+                "comments": comments.get(current_post.get("id"))
             })
     
     def __iter__(self):
@@ -441,13 +480,22 @@ class TreeHoleApp:
             comments = loop.run_until_complete(get_repo_comments)
 
             # 调试状态下缓存数据
+            # 注意：此处是缓存 Github 接口返回的原始数据，方便后续 debug 使用
             if self.debug:
                 with open(self.settings.get("cache_issues"), "w") as fd:
                     json.dump(issues, fd, ensure_ascii=False, indent=2)
                 with open(self.settings.get("cache_comments"), "w") as fd:
                     json.dump(comments, fd, ensure_ascii=False, indent=2)
+        
+        # 所有的数据按照 GithubModels 转换一遍
+        issues = [ dict(GithubIssue(issue)) for issue in issues ]
+        comments = [ dict(GithubComment(comment)) for comment in comments ]
 
-        return (issues, comments)
+        # 所有数据按照 TreeHoleModels 再转换一遍，符合当前程序使用要求
+        posts = [ dict(TreeHolePost(issue)) for issue in issues ]
+        comments = [ dict(TreeHoleComment(comment)) for comment in comments ]
+
+        return (posts, comments)
 
     def render(self, template_name: str, **kwargs):
         template_path = self.settings.get("template_path")
