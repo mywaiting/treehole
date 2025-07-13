@@ -307,6 +307,35 @@ class PostArchive:
 
         # 构建 年 → 月 → [posts] 的嵌套结构
         posts = list(self.posts)
+
+        # 构建根据 post_id 实现的查找字段
+        posts_maps = { 
+            post.get("id"): post
+            for post in posts
+        }
+
+        # 计算两集合 Jaccard 相似度，比较简单
+        def jaccard_similarity(set1: set[str], set2: set[str]):
+            if not set1 and not set2:
+                return 0.0
+            return len(set1 & set2) / len(set1 | set2)
+        
+        # 单纯使用文章 post_id/labels.name 执行计算
+        labels_maps = {
+            post.get("id"): set(label.get("name") for label in post.get("labels"))
+            for post in posts
+        }
+        labels_ids = labels_maps.keys()
+
+        # 所有文章的相似度计算缓存
+        similarity_maps = collections.defaultdict(list)
+        for i in range(len(labels_ids)):
+            for j in range(i + 1, len(labels_ids)):
+                id1, id2 = labels_ids[i], labels_ids[j]
+                sim = jaccard_similarity(labels_maps[id1], labels_maps[id2])
+                if sim > 0.0:
+                    similarity_maps[id1].append((id2, sim))
+                    similarity_maps[id2].append((id1, sim))
         
         # 此处可以清理全部的 self.posts 此变量后面作为最终结果输出
         # 实际处理好的 posts 每个单一的元素都能单独输出为对应的 post_archive 页面
@@ -317,12 +346,17 @@ class PostArchive:
             current_post = posts[i]
             prev_post = posts[i-1] if i > 0 else None              # 上一个文章/按当前文章顺序
             next_post = posts[i+1] if i < len(posts) - 1 else None # 下一个文章/按当前文章顺序
+            # 得到当前文章，根据 labels 相似度计算的结果
+            related = similarity_maps.get(current_post.get("id"), [])
+            related_sorted = sorted(related, key=lambda x: x[1], reverse=True)[0:3] # 此处每次取三篇相似文章
+            related_posts = [ posts_maps.get(post_id) for post_id, _ in related_sorted]
             # 所有数据缓存到 self.posts 方便外部使用
             self.posts.append({
                 "title": current_post.get("title"),
                 "post": current_post,
                 "prev_post": prev_post,
-                "next_post": next_post
+                "next_post": next_post,
+                "related_posts": related_posts, # 根据 labels 计算得到的相似文章
             })
     
     def __iter__(self):
@@ -335,6 +369,28 @@ class PostArchive:
 class FeedArchive:
     """按 Feed/Atom 列表输出，按日列出最新十篇文章列表（标题、日期、文章截断长文本、精简标签显示）
     """
+    def __init__(self, posts: list[TreeHolePost]):
+        self.posts = list(posts)
+
+        # 短暂为所有 posts 增加单独的 _datetime 字段用于排序和输出，避免重复转换
+        for post in self.posts:
+            post["_datetime"] = from_iso8601_date(post.get("created_at"))
+
+        # 全部 posts 按照时间从最新到最旧排序，此处原地排序/逆序
+        self.posts.sort(key=lambda post: post["_datetime"], reverse=True)
+
+        # Feed 只需要输出最新的五篇文章
+        posts = self.posts[0:5]
+
+        # 此处可以清理全部的 self.posts 此变量后面作为最终结果输出
+        # 实际处理好的 posts 每个单一的元素都能单独输出为对应的 daily_archive 页面
+        self.posts = posts
+
+    def __iter__(self):
+        return iter(self.posts)
+    
+    def __len__(self):
+        return len(self.posts)
 
 
 # 
@@ -347,28 +403,19 @@ class TreeHoleApp:
 
     def render_string(self, template_name: str, **kwargs):
         template_path = self.settings.get("template_path")
-        loader = self.create_template_loader(template_path)
-        t = loader.load(template_name)
-        namespace = self.get_template_namespce()
-        namespace.update(kwargs)
-        return t.generate(**namespace)
-    
-    def get_template_namespce(self):
-        code = self.settings.get("default_locale")
-        locale = tornado.locale.get(code)
-        namespace = dict(
-            locale=locale,
-            _=locale.translate,
-            pgettext=locale.pgettext,
-        )
-        return namespace
-
-    def create_template_loader(self, template_path: str):
-        kwargs = {
+        template_kwargs = {
             "autoescape": True,
             "whitespace": "single"
         }
-        return tornado.template.Loader(template_path, **kwargs)
+        loader = tornado.template.Loader(template_path, **template_kwargs)
+        t = loader.load(template_name)
 
-
+        locale = tornado.locale.get(self.settings.get("default_locale"))
+        namespace = {
+            "locale": locale,
+            "_": locale.translate,
+            "pgettext": locale.pgettext
+        }
+        namespace.update(kwargs)
+        return t.generate(**namespace)
 
