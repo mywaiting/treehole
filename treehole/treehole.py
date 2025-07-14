@@ -11,7 +11,7 @@ import tornado.locale
 import tornado.template
 
 from .github import GithubClient, GithubIssue, GithubComment
-from .utils import H1AndImageExtractor, only_english, from_iso8601_date, slugify
+from .utils import H1AndImageExtractor, only_english, from_iso8601_date, slugify, fread, fwrite
 
 
 
@@ -38,7 +38,7 @@ class TreeHolePost(dict):
 
         # 抽取 body_html 中全部的 h1/img 内容作为标题/头图的参考
         parser = H1AndImageExtractor()
-        parser.feed(post.get("body_html"))
+        parser.feed(post.get("body_html") or "")
         parser.close()
         # 已经解析好的全部符合要求的 h1/img/p 内容
         parsed_titles = parser.titles
@@ -57,6 +57,8 @@ class TreeHolePost(dict):
             slug = slugify(title)
             if parsed_titles:
                 title = parsed_titles[0]
+            
+            logger.info(f'parsed title={title}, slug={slug}')
         else:
             slug = slugify(post.get("issue_number"))
         
@@ -82,12 +84,14 @@ class TreeHolePost(dict):
         self["title"] = title
         self["slug"] = slug
         self["summary"] = summary
-        self["permanent_url"] = f'/{dt.year}/{dt.month}/{dt.day}/{slug}/'               # 永久链接
-        self["permanent_fullurl"] = f'/{dt.year}/{dt.month}/{dt.day}/{slug}/index.html' # 永久链接/全称形式，用于写入文件
-        self["source_url"] = post.get("issue_url")                                      # 原始链接
-        self["labels"]  = dict(post.get("labels"))
-        self["reactions"] = dict(post.get("reactions"))
-        self["user"] = dict(post.get("user"))
+        self["permanent_url"] = f'/{dt.year}/{dt.month:02d}/{dt.day:02d}/{slug}/'               # 永久链接
+        self["permanent_fullurl"] = f'/{dt.year}/{dt.month:02d}/{dt.day:02d}/{slug}/index.html' # 永久链接/全称形式，用于写入文件
+        self["source_url"] = post.get("issue_url") # 原始链接
+        self["labels"]  = post.get("labels")      # list
+        self["reactions"] = post.get("reactions") # list
+        self["user"] = post.get("user")
+        # 用于标识当前文件路径
+        self["filepath"] = f'./{dt.year}/{dt.month:02d}/{dt.day:02d}/{slug}/index.html' # 当前文件路径
 
 
 class TreeHoleComment(dict):
@@ -106,8 +110,8 @@ class TreeHoleComment(dict):
         self["updated_at"] = comment.get("updated_at")
         self["body"] = comment.get("body")
         self["body_html"] = comment.get("body_html")
-        self["reactions"] = dict(comment.get("reactions"))
-        self["user"] = dict(comment.get("user"))
+        self["reactions"] = comment.get("reactions") # list
+        self["user"] = comment.get("user")
 
 
 # 
@@ -128,11 +132,19 @@ class IndexArchive:
         self.posts.sort(key=lambda post: post["_datetime"], reverse=True)
 
         # 首页只需要输出最新的三篇文章
-        posts = self.posts[0:3]
+        posts = self.posts[0:10]
 
         # 此处可以清理全部的 self.posts 此变量后面作为最终结果输出
-        # 实际处理好的 posts 每个单一的元素都能单独输出为对应的 daily_archive 页面
-        self.posts = posts
+        # 实际处理好的 posts 每个单一的元素都能单独输出为对应的 index_archive 页面
+        self.posts = [{
+            "filepath": "./index.html",
+            "template": "list.html",
+            "template_vars": {
+                "archive": "index",
+                "page_title": "Index",
+                "posts": posts
+            }
+        }]
 
     def __iter__(self):
         return iter(self.posts)
@@ -188,8 +200,13 @@ class DailyArchive:
 
                     # 所有数据缓存到 self.posts 方便外部使用
                     self.posts.append({
-                        "title": title,
-                        "posts": daily_posts
+                        "filepath": f"./{year}/{month}/{day}/index.html",
+                        "template": "list.html",
+                        "template_vars": {
+                            "archive": "daily",
+                            "page_title": title,
+                            "posts": daily_posts
+                        }
                     })
     
     def __iter__(self):
@@ -246,8 +263,13 @@ class MonthlyArchive:
 
                     # 所有数据缓存到 self.posts 方便外部使用
                     self.posts.append({
-                        "title": title,
-                        "posts": daily_posts
+                        "filepath": f"./{year}/{month}/index.html",
+                        "template": "list.html",
+                        "template_vars": {
+                            "archive": "monthly",
+                            "page_title": title,
+                            "posts": daily_posts
+                        }
                     })
     
     def __iter__(self):
@@ -304,8 +326,13 @@ class YearlyArchive:
 
                     # 所有数据缓存到 self.posts 方便外部使用
                     self.posts.append({
-                        "title": title,
-                        "posts": daily_posts
+                        "filepath": f"./{year}/index.html",
+                        "template": "list.html",
+                        "template_vars": {
+                            "archive": "monthly",
+                            "page_title": title,
+                            "posts": daily_posts
+                        }
                     })
     
     def __iter__(self):
@@ -389,12 +416,17 @@ class PostArchive:
             related_posts = [ posts_maps.get(post_id) for post_id, _ in related_sorted]
             # 所有数据缓存到 self.posts 方便外部使用
             self.posts.append({
-                "title": current_post.get("title"),
-                "post": current_post,
-                "prev_post": prev_post,
-                "next_post": next_post,
-                "related_posts": related_posts, # 根据 labels 计算得到的相似文章
-                "comments": comments.get(current_post.get("id"))
+                "filepath": f'./{current_post.get("filepath")}',
+                "template": "post.html",
+                "template_vars": {
+                    "archive": "post",
+                    "page_title": current_post.get("title"),
+                    "post": current_post,
+                    "prev_post": prev_post,
+                    "next_post": next_post,
+                    "related_posts": related_posts, # 根据 labels 计算得到的相似文章
+                    "comments": comments.get(current_post.get("id"))
+                }
             })
     
     def __iter__(self):
@@ -439,18 +471,21 @@ class TreeHoleApp:
     def __init__(self, **settings):
         self.settings = settings
 
-        data_path = self.settings.get("data_path")
-
         self.settings.setdefault("locale_path", os.path.join(base_dir, "locale"))
         self.settings.setdefault("template_path", os.path.join(base_dir, "templates"))
         self.settings.setdefault("static_path", os.path.join(base_dir, "static"))
+
+        data_path = self.settings.get("data_path")
+        self.settings.setdefault("output_dir", os.path.join(data_path, "output"))
         
         if self.settings.get("cache_data", True):
             self.settings.setdefault("cache_issues", os.path.join(data_path, "_issues.json"))
             self.settings.setdefault("cache_comments", os.path.join(data_path, "_comments.json"))
 
     def clean_up(self):
-        output_dir = os.path.join(self.settings.get("data_path"), "output")
+        output_dir = self.settings.get("output_dir")
+        logger.info(f'clean up folder: {output_dir}')
+
         for rel_path in os.listdir(output_dir):
             path = os.path.join(output_dir, rel_path)
             if os.path.isdir(path):
@@ -466,32 +501,53 @@ class TreeHoleApp:
         - debug 状态而且 ./data 目录有对应文件，那么从本地加载数据
         - 否则从 github 加载数据
         """
-        if (self.settings.get("debug") and 
-            os.path.exists(self.settings.get("cache_issues")) and 
-            os.path.exists(self.settings.get("cache_comments"))
-        ):
-            issues = json.load(self.settings.get("cache_issues"))
-            comments = json.load(self.settings.get("cache_comments"))
+        cache_issues = self.settings.get("cache_issues")
+        cache_comments = self.settings.get("cache_comments")
+
+        if (self.settings.get("debug") and os.path.exists(cache_issues) and os.path.exists(cache_comments)):
+            logger.info(
+                f'use cache_data, issues={self.settings.get("cache_issues")}, '
+                f'comments={self.settings.get("cache_comments")}'
+            )
+            with open(cache_issues, "rt") as fd:
+                issues = json.load(fd)
+            with open(cache_comments, "rt") as fd:
+                comments = json.load(fd)
+        
         else:
             owner = self.settings.get("github_owner")
             repo = self.settings.get("github_repo")
             token = self.settings.get("github_token")
 
+            logger.info(f'use github_data, github_owner={owner}, github_repo={repo}')
+
             client = GithubClient(token)
-            get_repo_issues = lambda: client.get_repo_issues(owner, repo)
-            get_repo_comments = lambda: client.get_issue_comments(owner, repo)
+
+            # 注意：此处需要将异步函数转为同步执行，注意下面的定义函数
+            # 注意：由于函数返回异步生成器 yield+async 此处需要包裹中间的异步函数来执行
+            async def get_repo_issues():
+                issues = []
+                async for issue in client.get_repo_issues(owner, repo):
+                    issues.append(issue)
+                return issues
+            
+            async def get_issue_comments():
+                comments = []
+                async for comment in client.get_issue_comments(owner, repo):
+                    comments.append(comment)
+                return comments
 
             # 异步函数转同步执行，更加方便
             loop = asyncio.get_event_loop()
-            issues = loop.run_until_complete(get_repo_issues)
-            comments = loop.run_until_complete(get_repo_comments)
+            issues = loop.run_until_complete(get_repo_issues())
+            comments = loop.run_until_complete(get_issue_comments())
 
             # 调试状态下缓存数据
             # 注意：此处是缓存 Github 接口返回的原始数据，方便后续 debug 使用
-            if self.debug:
-                with open(self.settings.get("cache_issues"), "w") as fd:
+            if self.settings.get("debug"):
+                with open(cache_issues, "w") as fd:
                     json.dump(issues, fd, ensure_ascii=False, indent=2)
-                with open(self.settings.get("cache_comments"), "w") as fd:
+                with open(cache_comments, "w") as fd:
                     json.dump(comments, fd, ensure_ascii=False, indent=2)
         
         # 所有的数据按照 GithubModels 转换一遍
@@ -507,20 +563,29 @@ class TreeHoleApp:
     def render(self, template_name: str, **kwargs):
         template_path = self.settings.get("template_path")
         template_kwargs = {
-            "autoescape": True,
             "whitespace": "single"
         }
         loader = tornado.template.Loader(template_path, **template_kwargs)
         t = loader.load(template_name)
-
         locale = tornado.locale.get(self.settings.get("default_locale"))
         namespace = {
             "locale": locale,
             "_": locale.translate,
-            "pgettext": locale.pgettext
+            "pgettext": locale.pgettext,
+            # global template_vars
+            "default_locale": self.settings.get("default_locale"),
+            "base_url": self.settings.get("base_url"),
+            "site_title": self.settings.get("site_title"),
+            "site_desc": self.settings.get("site_desc")
         }
         namespace.update(kwargs)
-        return t.generate(**namespace)
+
+        # 注意：此处必须单独使用 try 方便直接显示出错的模板行数
+        try:
+            return t.generate(**namespace).decode()
+        except Exception as e:
+            logger.exception(f'fail to render: {template_name}, exception={e}', exc_info=True)
+            return ""
 
     def copy_file(self):
         static_path = self.settings.get("static_path")
@@ -539,6 +604,24 @@ class TreeHoleApp:
                 shutil.copy2(src_path, dst_path)
 
     def run(self):
-        
+        # 首先清理输出目录
+        self.clean_up()
+
+        # 加载数据
+        posts, comments = self.load_data()
+
+        # 按照 Archive 类别处理输出
+        index_archive = IndexArchive(posts)
+        for post in index_archive:
+            filepath = post.get("filepath")
+            template = post.get("template")
+            template_vars = post.get("template_vars")
+
+            # 生成对应的模板内容
+            filetext = self.render(template, **template_vars)
+            
+            fwrite(os.path.join(self.settings.get("output_dir"), filepath), filetext)
+                
+
 
 

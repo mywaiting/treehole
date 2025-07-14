@@ -5,12 +5,29 @@
 import datetime
 import html.parser
 import io
+import os
 import os.path
 import re
 import string
 import unicodedata
 import xml.sax.saxutils
 
+
+
+def fread(filepath):
+    with open(filepath, "rt") as fd:
+        return fd.read()
+
+
+def fwrite(filepath, text):
+    filepath = os.path.normpath(filepath)
+    dirpath = os.path.dirname(filepath)
+
+    # 首先创建父级文件夹
+    os.makedirs(dirpath, exist_ok=True)
+
+    with open(filepath, "wt") as fd:
+        fd.write(text)
 
 
 def slugify(value="", allow_unicode=False):

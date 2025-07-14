@@ -3,11 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="{% block description %}{% end %}">
-    <title>{% block title %}{% end %}</title>
-    <meta property="og:site_name" content="">
-    <meta property="og:title" content="{% block title %}{% end %}">
-    <meta property="og:description" content="{% block description %}{% end %}">
+    <meta name="description" content="{% block description %}{{ site_desc }}{% end %}">
+    <title>{% block title %}{{ site_title }}{% end %}</title>
+    <meta property="og:site_name" content="{{ site_title }}">
+    <meta property="og:title" content="{% block title %}{{ site_title }}{% end %}">
+    <meta property="og:description" content="{% block description %}{{ site_desc }}{% end %}">
     <link rel="stylesheet" href="/static/app.css">
     {% block head %}{% end %}
 </head>

@@ -27,8 +27,8 @@ class GithubClient:
     api_version = "2022-11-28"
     api_reference = "https://docs.github.com/"
 
-    def __init__(self, token, accept="application/vnd.github.html+json"):
-        """注意：此处 accept 默认使用 html+json 是为了 issue/comments 直接返回 body_html 解析好的结果
+    def __init__(self, token, accept="application/vnd.github.full+json"):
+        """注意：此处 accept 默认使用 full+json 是为了 issue/comments 直接返回 body_html 解析好的结果
         """
         self.token = token
         self.accept = accept
@@ -115,7 +115,7 @@ class GithubClient:
             )
             try:
                 response = await httpclient.fetch(request)
-                issues = json.loads(response.body)
+                comments = json.loads(response.body)
             except tornado.httpclient.HTTPClientError as e:
                 logger.error(f"httpclient error: {e}")
                 response = e.response
@@ -124,8 +124,8 @@ class GithubClient:
             
             # 注意：此处返回迭代器方便直接使用当前返回结果
             # 注意：此处使用迭代器方便边拉取数据边使用数据，节省内存
-            for issue in issues:
-                yield issue
+            for comment in comments:
+                yield comment
 
             links = self.parse_header_links(response.headers)
             # 注意：如果存在 next 说明还有下一页，否则不存在下一页
@@ -168,7 +168,7 @@ class GithubIssue(dict):
         self["issue_url"] = issue.get("html_url")
         self["issue_number"] = issue.get("number")
         # issue
-        self["title"] = issue.get("title"),
+        self["title"] = issue.get("title")
         self["created_at"] = issue.get("created_at")
         self["updated_at"] = issue.get("updated_at")
         self["state"] = issue.get("state")
