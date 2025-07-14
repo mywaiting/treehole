@@ -15,6 +15,7 @@ from .utils import H1AndImageExtractor, only_english, from_iso8601_date, slugify
 
 
 
+base_dir = os.path.dirname(__file__)
 logger = logging.getLogger("treehole")
 
 
@@ -437,10 +438,16 @@ class FeedArchive:
 class TreeHoleApp:
     def __init__(self, **settings):
         self.settings = settings
+
+        data_path = self.settings.get("data_path")
+
+        self.settings.setdefault("locale_path", os.path.join(base_dir, "locale"))
+        self.settings.setdefault("template_path", os.path.join(base_dir, "templates"))
+        self.settings.setdefault("static_path", os.path.join(base_dir, "static"))
         
         if self.settings.get("cache_data", True):
-            self.settings.setdefault("cache_issues", os.path.join(self.settings.get("data_path"), "_issues.json"))
-            self.settings.setdefault("cache_comments", os.path.join(self.settings.get("data_path"), "_comments.json"))
+            self.settings.setdefault("cache_issues", os.path.join(data_path, "_issues.json"))
+            self.settings.setdefault("cache_comments", os.path.join(data_path, "_comments.json"))
 
     def clean_up(self):
         output_dir = os.path.join(self.settings.get("data_path"), "output")
@@ -514,4 +521,24 @@ class TreeHoleApp:
         }
         namespace.update(kwargs)
         return t.generate(**namespace)
+
+    def copy_file(self):
+        static_path = self.settings.get("static_path")
+        output_dir = os.path.join(self.settings.get("data_path"), "output")
+
+        # 创建目标文件夹
+        os.makedirs(output_dir, exist_ok=True)
+
+        for rel_path in os.listdir(static_path):
+            src_path = os.path.join(static_path, rel_path)
+            dst_path = os.path.join(output_dir, rel_path)
+
+            if os.path.isdir(src_path):
+                shutil.copytree(src_path, dst_path, dirs_exist_ok=True)
+            else:
+                shutil.copy2(src_path, dst_path)
+
+    def run(self):
+        
+
 

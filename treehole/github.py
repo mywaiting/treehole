@@ -195,7 +195,7 @@ class GithubComment(dict):
         _, issue_number = issue_url.split("/issues/", 1)
 
         # issue
-        self["isuue_url"] = issue_url
+        self["issue_url"] = issue_url
         self["issue_number"] = issue_number
         # comment
         self["comment_url"] = comment.get("html_url")
