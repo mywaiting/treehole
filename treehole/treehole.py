@@ -1,5 +1,6 @@
 import asyncio
 import collections
+import copy
 import datetime
 import json
 import logging
@@ -122,7 +123,7 @@ class IndexArchive:
     """首页输出最新三篇文章/内容列表归档实现，按日列出最新三篇文章列表（标题、日期、文章全部文本、精简标签显示）
     """
     def __init__(self, posts: list[TreeHolePost]):
-        self.posts = list(posts)
+        self.posts = copy.deepcopy(posts)
 
         # 短暂为所有 posts 增加单独的 _datetime 字段用于排序和输出，避免重复转换
         for post in self.posts:
@@ -138,10 +139,12 @@ class IndexArchive:
         # 实际处理好的 posts 每个单一的元素都能单独输出为对应的 index_archive 页面
         self.posts = [{
             "filepath": "./index.html",
-            "template": "list.html",
+            "template_name": "list.html",
             "template_vars": {
-                "archive": "index",
-                "page_title": "Index",
+                "page": "index",
+                "page_title": None,  # 首页默认使用 site_title
+                "page_desc": None,   # 首页默认使用 site_desc
+                "page_class": "index",
                 "posts": posts
             }
         }]
@@ -157,7 +160,7 @@ class DailyArchive:
     """按天文章列表归档实现，按日列出全部的文章列表（标题、日期、文章截断长文本、精简标签显示）
     """
     def __init__(self, posts: list[TreeHolePost]):
-        self.posts = list(posts)
+        self.posts = copy.deepcopy(posts)
 
         # 短暂为所有 posts 增加单独的 _datetime 字段用于排序和输出，避免重复转换
         for post in self.posts:
@@ -200,11 +203,13 @@ class DailyArchive:
 
                     # 所有数据缓存到 self.posts 方便外部使用
                     self.posts.append({
-                        "filepath": f"./{year}/{month}/{day}/index.html",
-                        "template": "list.html",
+                        "filepath": f"./{year}/{month:02d}/{day:02d}/index.html",
+                        "template_name": "list.html",
                         "template_vars": {
-                            "archive": "daily",
+                            "page": "daily",
                             "page_title": title,
+                            "page_desc": title,
+                            "page_class": "daily",
                             "posts": daily_posts
                         }
                     })
@@ -220,7 +225,7 @@ class MonthlyArchive:
     """按月份文章列表归档实现，按日列出对应月份的文章列表（标题、日期、文章截断短文本、精简标签显示）
     """
     def __init__(self, posts: list[TreeHolePost]):
-        self.posts = list(posts)
+        self.posts = copy.deepcopy(posts)
 
         # 短暂为所有 posts 增加单独的 _datetime 字段用于排序和输出，避免重复转换
         for post in self.posts:
@@ -263,11 +268,13 @@ class MonthlyArchive:
 
                     # 所有数据缓存到 self.posts 方便外部使用
                     self.posts.append({
-                        "filepath": f"./{year}/{month}/index.html",
-                        "template": "list.html",
+                        "filepath": f"./{year}/{month:02d}/index.html",
+                        "template_name": "list.html",
                         "template_vars": {
-                            "archive": "monthly",
+                            "page": "monthly",
                             "page_title": title,
+                            "page_desc": title,
+                            "page_class": "daily",
                             "posts": daily_posts
                         }
                     })
@@ -283,7 +290,7 @@ class YearlyArchive:
     """按年份文章列表归档实现，按月份列出对应年份的文章列表（标题、日期）
     """
     def __init__(self, posts: list[TreeHolePost]):
-        self.posts = list(posts)
+        self.posts = copy.deepcopy(posts)
 
         # 短暂为所有 posts 增加单独的 _datetime 字段用于排序和输出，避免重复转换
         for post in self.posts:
@@ -327,10 +334,12 @@ class YearlyArchive:
                     # 所有数据缓存到 self.posts 方便外部使用
                     self.posts.append({
                         "filepath": f"./{year}/index.html",
-                        "template": "list.html",
+                        "template_name": "list.html",
                         "template_vars": {
-                            "archive": "monthly",
+                            "page": "yearly",
                             "page_title": title,
+                            "page_desc": title,
+                            "page_class": "yearly",
                             "posts": daily_posts
                         }
                     })
@@ -346,8 +355,8 @@ class PostArchive:
     """按单一博客文章归档实现
     """
     def __init__(self, posts: list[TreeHolePost], comments: list[TreeHoleComment]):
-        self.posts = list(posts)
-        self.comments = list(comments)
+        self.posts = copy.deepcopy(posts)
+        self.comments = copy.deepcopy(comments)
 
         # 短暂为所有 comments 增加单独的 _datetime 字段用于排序和输出，避免重复转换
         for comment in self.comments:
@@ -389,7 +398,7 @@ class PostArchive:
             post.get("id"): set(label.get("name") for label in post.get("labels"))
             for post in posts
         }
-        labels_ids = labels_maps.keys()
+        labels_ids = list(labels_maps.keys())
 
         # 所有文章的相似度计算缓存
         similarity_maps = collections.defaultdict(list)
@@ -407,25 +416,26 @@ class PostArchive:
 
         # 遍历全部处理好的 posts 数据嵌套结构，按天汇总输出所有的 post_archive 页面数据
         for i, value in enumerate(posts):
-            current_post = posts[i]
+            post = posts[i]
             prev_post = posts[i-1] if i > 0 else None              # 上一个文章/按当前文章顺序
             next_post = posts[i+1] if i < len(posts) - 1 else None # 下一个文章/按当前文章顺序
             # 得到当前文章，根据 labels 相似度计算的结果
-            related = similarity_maps.get(current_post.get("id"), [])
+            related = similarity_maps.get(post.get("id"), [])
             related_sorted = sorted(related, key=lambda x: x[1], reverse=True)[0:3] # 此处每次取三篇相似文章
             related_posts = [ posts_maps.get(post_id) for post_id, _ in related_sorted]
             # 所有数据缓存到 self.posts 方便外部使用
             self.posts.append({
-                "filepath": f'./{current_post.get("filepath")}',
-                "template": "post.html",
+                "filepath": post.get("filepath"), # 单一页面输出文件路径，直接提取其 filepath 此处不重复计算
+                "template_name": "post.html",
                 "template_vars": {
-                    "archive": "post",
-                    "page_title": current_post.get("title"),
-                    "post": current_post,
+                    "page": "post",
+                    "page_title": post.get("title"),
+                    "page_desc": post.get("summary"),
+                    "post": post,
                     "prev_post": prev_post,
                     "next_post": next_post,
                     "related_posts": related_posts, # 根据 labels 计算得到的相似文章
-                    "comments": comments.get(current_post.get("id"))
+                    "comments": comments_maps.get(post.get("id"))
                 }
             })
     
@@ -440,7 +450,7 @@ class FeedArchive:
     """按 Feed/Atom 列表输出，按日列出最新十篇文章列表（标题、日期、文章截断长文本、精简标签显示）
     """
     def __init__(self, posts: list[TreeHolePost]):
-        self.posts = list(posts)
+        self.posts = copy.deepcopy(posts)
 
         # 短暂为所有 posts 增加单独的 _datetime 字段用于排序和输出，避免重复转换
         for post in self.posts:
@@ -545,6 +555,11 @@ class TreeHoleApp:
             # 调试状态下缓存数据
             # 注意：此处是缓存 Github 接口返回的原始数据，方便后续 debug 使用
             if self.settings.get("debug"):
+                logger.info(
+                    f'save cache_data, issues={self.settings.get("cache_issues")}, '
+                    f'comments={self.settings.get("cache_comments")}'
+                )
+
                 with open(cache_issues, "w") as fd:
                     json.dump(issues, fd, ensure_ascii=False, indent=2)
                 with open(cache_comments, "w") as fd:
@@ -584,14 +599,14 @@ class TreeHoleApp:
         try:
             return t.generate(**namespace).decode()
         except Exception as e:
-            logger.exception(f'fail to render: {template_name}, exception={e}', exc_info=True)
+            logger.exception(f'fail to render: {template_name}, exception={e}')
             return ""
 
     def copy_file(self):
         static_path = self.settings.get("static_path")
-        output_dir = os.path.join(self.settings.get("data_path"), "output")
+        output_dir = self.settings.get("output_dir")
 
-        # 创建目标文件夹
+        logger.info(f'copy_file/static_file, from_dir={static_path}, to_dir={output_dir}')
         os.makedirs(output_dir, exist_ok=True)
 
         for rel_path in os.listdir(static_path):
@@ -604,6 +619,8 @@ class TreeHoleApp:
                 shutil.copy2(src_path, dst_path)
 
     def run(self):
+        logger.info(f'app started')
+
         # 首先清理输出目录
         self.clean_up()
 
@@ -611,17 +628,20 @@ class TreeHoleApp:
         posts, comments = self.load_data()
 
         # 按照 Archive 类别处理输出
-        index_archive = IndexArchive(posts)
-        for post in index_archive:
-            filepath = post.get("filepath")
-            template = post.get("template")
-            template_vars = post.get("template_vars")
-
-            # 生成对应的模板内容
-            filetext = self.render(template, **template_vars)
-            
-            fwrite(os.path.join(self.settings.get("output_dir"), filepath), filetext)
-                
-
-
-
+        archives = {
+            "index": IndexArchive(posts),
+            "daily": DailyArchive(posts),
+            "monthly": MonthlyArchive(posts),
+            "yearly": YearlyArchive(posts),
+            "post": PostArchive(posts, comments)
+        }
+        for archive, posts in archives.items():
+            logger.info(f'render {archive}, items={len(archives[archive])}')
+            for post in posts:
+                filetext = self.render(post.get("template_name"), **post.get("template_vars"))
+                fwrite(os.path.join(self.settings.get("output_dir"), post.get("filepath")), filetext)
+        
+        # 复制静态文件
+        self.copy_file()
+        
+        logger.info(f'app exited')
