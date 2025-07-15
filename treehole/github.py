@@ -56,7 +56,8 @@ class GithubClient:
             "per_page": per_page
         }
         url = f"{self.base_url}/repos/{owner}/{repo}/issues?{urllib.parse.urlencode(params)}"
-
+        
+        logger.info(f'get_repo_issues, owner={owner}, repo={repo}, per_page={per_page}')
         httpclient = tornado.httpclient.AsyncHTTPClient()
 
         while True:
@@ -69,8 +70,12 @@ class GithubClient:
                 response = await httpclient.fetch(request)
                 issues = json.loads(response.body)
             except tornado.httpclient.HTTPClientError as e:
-                logger.error(f"httpclient error: {e}")
+                logger.error(f"httpclient error: {e}", exc_info=True)
                 response = e.response
+                # 注意：此处出错则直接返回
+                return
+            except Exception as e:
+                logger.error(f"httpclent unknown: {e}", exc_info=True)
                 # 注意：此处出错则直接返回
                 return
             
@@ -105,6 +110,7 @@ class GithubClient:
         }
         url = f"{self.base_url}/repos/{owner}/{repo}/issues/comments?{urllib.parse.urlencode(params)}"
 
+        logger.info(f'get_issue_comments, owner={owner}, repo={repo}, per_page={per_page}')
         httpclient = tornado.httpclient.AsyncHTTPClient()
 
         while True:
@@ -117,8 +123,12 @@ class GithubClient:
                 response = await httpclient.fetch(request)
                 comments = json.loads(response.body)
             except tornado.httpclient.HTTPClientError as e:
-                logger.error(f"httpclient error: {e}")
+                logger.error(f"httpclient error: {e}", exc_info=True)
                 response = e.response
+                # 注意：此处出错则直接返回
+                return
+            except Exception as e:
+                logger.error(f"httpclent unknown: {e}", exc_info=True)
                 # 注意：此处出错则直接返回
                 return
             
