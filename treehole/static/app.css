@@ -1,0 +1,54 @@
+/*! (c) mywaiting */
+
+:root {
+    --bg-color: rgba(248, 249, 250, 1);
+    --text-color: #000;
+    --link-color: #336bad;
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: rgba(33, 37, 41, 1);
+        --text-color: #fff;
+        --link-color: 6699ff;
+    }
+}
+
+* { 
+    box-sizing: border-box; 
+}
+body, div, span, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote,
+pre, a, code, em, img, dl, dt, dd, ol, ul, li, form, table, caption, th,
+td, canvas, embed, button {
+	border: 0;
+	margin: 0;
+	padding: 0;
+}
+html {
+	font-size: 62.5%; /* 1rem=10px */
+}
+body, input, textarea, td, button {
+	font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+	font-size: 1.6rem;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+code, pre {
+	font-size: 1.6rem;
+	font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+}
+a {
+	color: var(--link-color);
+	text-decoration: none;
+}
+a:hover, a:focus {
+    text-decoration: underline
+}
+img {
+	vertical-align: middle;
+    max-width: 100%;
+}
+table {
+    width: 100%;
+}
+
+
