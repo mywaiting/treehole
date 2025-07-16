@@ -89,7 +89,7 @@ class TreeHolePost(dict):
         self["permanent_fullurl"] = f'/{dt.year}/{dt.month:02d}/{dt.day:02d}/{slug}/index.html' # 永久链接/全称形式，用于写入文件
         self["source_url"] = post.get("issue_url") # 原始链接
         self["labels"]  = post.get("labels")      # list
-        self["reactions"] = post.get("reactions") # list
+        self["reactions"] = post.get("reactions") # dict
         self["user"] = post.get("user")
         # 用于标识当前文件路径
         self["filepath"] = f'./{dt.year}/{dt.month:02d}/{dt.day:02d}/{slug}/index.html' # 当前文件路径
@@ -366,10 +366,10 @@ class PostArchive:
         self.comments.sort(key=lambda comment: comment["_datetime"], reverse=True)
 
         # 直接遍历处理得到所有按照 issue_number 的评论序列
+        # 注意：此处显式转换数字为字符串作为 Key 务必注意！使用 Int 提取对应数据将返回 list()
         comments_maps = collections.defaultdict(list)
         for comment in self.comments:
-            comments_maps[comment.get("post_id")].append(comment)
-
+            comments_maps[str(comment.get("post_id"))].append(comment)
 
         # 短暂为所有 posts 增加单独的 _datetime 字段用于排序和输出，避免重复转换
         for post in self.posts:
@@ -431,11 +431,12 @@ class PostArchive:
                     "page": "post",
                     "page_title": post.get("title"),
                     "page_desc": post.get("summary"),
+                    "page_class": "post",
                     "post": post,
                     "prev_post": prev_post,
                     "next_post": next_post,
                     "related_posts": related_posts, # 根据 labels 计算得到的相似文章
-                    "comments": comments_maps.get(post.get("id"))
+                    "comments": comments_maps[str(post.get("id"))], # 注意：此处必须转换 id 为字符串
                 }
             })
     
@@ -645,3 +646,4 @@ class TreeHoleApp:
         self.copy_file()
         
         logger.info(f'app exited')
+
