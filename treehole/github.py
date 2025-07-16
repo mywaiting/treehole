@@ -226,8 +226,8 @@ class GithubLabel(dict):
     def __init__(self, label: dict):
         self._origin_data = label
         
-        self["name"] = label.get("name"),
-        self["color"] = label.get("color"),
+        self["name"] = label.get("name")
+        self["color"] = label.get("color")
         self["description"] = label.get("description")
 
 
