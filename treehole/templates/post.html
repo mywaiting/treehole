@@ -3,11 +3,11 @@
 {% block title %}{{ page_title or site_title }}{% end %}
 {% block description %}{{ post.get('summary') or page_desc or site_desc }}{% end %}
 {% block head %}
-<link rel="canonical" href="{{ base_url }}{{ post.get('permanent_url') }}">
 <meta property="og:type" content="article">
 <meta property="og:url" content="{{ base_url }}{{ post.get('permanent_url') }}">
 <meta property="og:updated_time" content="{{ post.get('updated_at') }}">
 {% if post.get('image') %}<meta property="og:image" content="{{ post.get('image') }}">{% end %}
+<link rel="canonical" href="{{ base_url }}{{ post.get('permanent_url') }}">
 {% end %}
 
 {% block page_class %}{{ page_class }}{% end %}
