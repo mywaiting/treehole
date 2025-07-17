@@ -7,16 +7,20 @@
 
 
 {% block main %}
-<h1>{{ page_title or site_title }}</h1>
 <!-- IndexArchive -->
 <!-- 按日列出最新三篇文章列表（标题、日期、文章全部文本、精简标签显示） -->
 {% if page == 'index' %}
+<div class="posts">
     {% for post in posts %}
-    <article>
-        <h2><a href="{{ post.get('permanent_url') }}">{{ post.get('title') }}</a></h2>
+    <article class="post">
+        <header>
+            <h1><a href="{{ post.get('permanent_url') }}">{{ post.get('title') }}</a></h1>
+            <time datetime="{{ post.get('created_at') }}">{{ post.get('created_at') }}</time>
+        </header>
         {% raw post.get('body_html') %}
     </article>
     {% end %}
+</div>
 {% end %}
 <!-- DailyArchive -->
 <!-- 按日列出全部的文章列表（标题、日期、文章截断长文本、精简标签显示） -->
