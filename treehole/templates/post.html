@@ -1,13 +1,20 @@
 {% extends "base.html" %}
 
 {% block title %}{{ page_title or site_title }}{% end %}
-{% block description %}{{ page_desc or site_desc }}{% end %}
+{% block description %}{{ post.get('summary') or page_desc or site_desc }}{% end %}
+{% block head %}
+<link rel="canonical" href="{{ base_url }}{{ post.get('permanent_url') }}">
+<meta property="og:type" content="article">
+<meta property="og:url" content="{{ base_url }}{{ post.get('permanent_url') }}">
+<meta property="og:updated_time" content="{{ post.get('updated_at') }}">
+{% if post.get('image') %}<meta property="og:image" content="{{ post.get('image') }}">{% end %}
+{% end %}
 
 {% block page_class %}{{ page_class }}{% end %}
 
 
 {% block main %}
-<article>
+<article class="post">
     <header>
         <h1>{{ post.get('title') }}</h1>
         <time datetime="{{ post.get('created_at') }}">{{ post.get('created_at') }}</time>
@@ -29,9 +36,7 @@
             <h3>Reactions</h3>
             <ul>
                 {% for emoji, count in post.get('reactions').items() %}
-                    {% if count %}
-                    <li>{{ emoji }} +{{ count }}</li>
-                    {% end %}
+                    {% if count %}<li>{{ emoji }} +{{ count }}</li>{% end %}
                 {% end %}
             </ul>
         </section>
@@ -40,12 +45,8 @@
         <section>
             <h3>Nav</h3>
             <nav>
-                {% if prev_post %}
-                <p>Prev: <a href="{{ prev_post.get('permanent_url') }}">{{ prev_post.get('title') }}</a></p>
-                {% end %}
-                {% if next_post %}
-                <p>Next: <a href="{{ next_post.get('permanent_url') }}">{{ next_post.get('title') }}</a></p>
-                {% end %}
+                {% if next_post %}<p>Next: <a href="{{ next_post.get('permanent_url') }}">{{ next_post.get('title') }}</a></p>{% end %}
+                {% if prev_post %}<p>Previous: <a href="{{ prev_post.get('permanent_url') }}">{{ prev_post.get('title') }}</a></p>{% end %}
             </nav>
         </section>
         {% end %}
@@ -62,13 +63,13 @@
     </footer>
 </article>
 {% if comments %}
-<div id="comments">
+<div class="comments">
     <h2>Comments ({{ len(comments) }})</h2>
     {% for comment in comments %}
-    <article>
+    <article class="comment" id="comment-{{ comment.get('id') }}">
         <header>
             {% set user = comment.get('user') %}
-            <img src="{{ user.get('avatar_url') }}" alt="{{ user.get('login') }}">
+            <img src="{{ user.get('avatar_url') }}" alt="{{ user.get('login') }} avatar" width="40" height="40" loading="lazy">
             <strong>{{ user.get('login') }}</strong>
             <time datetime="{{ comment.get('created_at') }}">{{ comment.get('created_at') }}</time>
         </header>
@@ -77,9 +78,7 @@
         <footer>
             <ul>
                 {% for emoji, count in comment.get('reactions').items() %}
-                    {% if count %}
-                    <li>{{ emoji }} +{{ count }}</li>
-                    {% end %}
+                    {% if count %}<li>{{ emoji }} +{{ count }}</li>{% end %}
                 {% end %}
             </ul>
         </footer>
