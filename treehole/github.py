@@ -27,8 +27,15 @@ class GithubClient:
     api_version = "2022-11-28"
     api_reference = "https://docs.github.com/"
 
-    def __init__(self, token, accept="application/vnd.github.full+json"):
-        """注意：此处 accept 默认使用 full+json 是为了 issue/comments 直接返回 body_html 解析好的结果
+    def __init__(self, token, accept="application/vnd.github.raw+json"):
+        """
+        - 注意：此处 accept 默认使用 raw+json 即可（本身就是默认值）
+        - 注意：可以使用 full+json 是为了 issue/comments 直接返回 body_html 解析好的结果
+        - 注意：本来是考虑直接使用 Github 原始生成的 body_html 结果的，但是有以下问题
+            - 由于 Github 默认处理图片链接为 `https://private-user-images.githubusercontent.com/xxx.png?jwt={}`
+                而且对应的图片由 `<a href=""></a>` 包裹，此处需要替换其链接实现
+            - 处理好的图片链接最多只有五分钟的访问有效期，无法在文章输出中使用
+            - 并且处理后的图片包裹对应图片链接，访问就直接出错，相当不友好
         """
         self.token = token
         self.accept = accept
@@ -183,7 +190,7 @@ class GithubIssue(dict):
         self["updated_at"] = issue.get("updated_at")
         self["state"] = issue.get("state")
         self["body"] = issue.get("body")
-        self["body_html"] = issue.get("body_html")
+        # self["body_html"] = issue.get("body_html")
         # labels
         self["labels"] = [ dict(GithubLabel(label)) for label in issue.get("labels") ]
         # reactions
@@ -213,7 +220,7 @@ class GithubComment(dict):
         self["created_at"] = comment.get("created_at")
         self["updated_at"] = comment.get("updated_at")
         self["body"] = comment.get("body")
-        self["body_html"] = comment.get("body_html")
+        # self["body_html"] = comment.get("body_html")
         # reactions
         self["reactions"] = dict(GithubReactions(comment.get("reactions")))
         # user

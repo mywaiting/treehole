@@ -8,6 +8,7 @@ import os
 import os.path
 import shutil
 
+import mistune
 import tornado.locale
 import tornado.template
 
@@ -35,11 +36,13 @@ class TreeHolePost(dict):
         self["created_at"] = post.get("created_at")
         self["updated_at"] = post.get("updated_at")
         self["body"] = post.get("body")
-        self["body_html"] = post.get("body_html")
+        # 由于 Github 返回的 body_html 图片部分无法使用
+        # 此处只能本地渲染 markdown 文档输出
+        self["body_html"] = mistune.markdown(post.get("body"))
 
         # 抽取 body_html 中全部的 h1/img 内容作为标题/头图的参考
         parser = H1AndImageExtractor()
-        parser.feed(post.get("body_html") or "")
+        parser.feed(self["body_html"] or "")
         parser.close()
         # 已经解析好的全部符合要求的 h1/img/p 内容
         parsed_titles = parser.titles
@@ -110,7 +113,10 @@ class TreeHoleComment(dict):
         self["created_at"] = comment.get("created_at")
         self["updated_at"] = comment.get("updated_at")
         self["body"] = comment.get("body")
-        self["body_html"] = comment.get("body_html")
+        # 由于 Github 返回的 body_html 图片部分无法使用
+        # 此处只能本地渲染 markdown 文档输出
+        self["body_html"] = mistune.markdown(comment.get("body"))
+
         self["reactions"] = comment.get("reactions") # list
         self["user"] = comment.get("user")
 
