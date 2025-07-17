@@ -12,7 +12,10 @@
 <!-- 按日列出最新三篇文章列表（标题、日期、文章全部文本、精简标签显示） -->
 {% if page == 'index' %}
     {% for post in posts %}
-    <h2><a href="{{ post.get('permanent_url') }}">{{ post.get('title') }}</a></h2>
+    <article>
+        <h2><a href="{{ post.get('permanent_url') }}">{{ post.get('title') }}</a></h2>
+        {% raw post.get('body_html') %}
+    </article>
     {% end %}
 {% end %}
 <!-- DailyArchive -->

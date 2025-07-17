@@ -15,21 +15,21 @@
     {% block top %}{% end %}
     <div id="app">
         {% block header %}
-        <header id="hd">
+        <header class="header">
             <div class="container">
                 <h1><a href="{{ base_url }}">{{ site_title }}</a></h1>
                 <p>{{ site_desc }}</p>
             </div>
         </header>
         {% end %}
-        <div id="bd">
+        <div class="content">
             <div class="container">
                 <main class="main">{% block main %}{% end %}</main>
                 <aside class="side">{% block side %}{% end %}</aside>
             </div>
         </div>
         {% block footer %}
-        <footer id="ft">
+        <footer class="footer">
             <div class="container">
                 <p>© 2025 {{ site_title }}</p>
                 <p>Powered By <a href="https://github.com/mywaiting/treehole">TreeHole</a> with <a href="https://docs.github.com/issues">Github Issues</a>,
