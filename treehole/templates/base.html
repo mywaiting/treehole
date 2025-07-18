@@ -16,26 +16,17 @@
     <div id="app">
         {% block header %}
         <header class="header">
-            <nav class="container">
-                <h1><a href="{{ base_url }}">{{ site_title }}</a></h1>
-                <small>{{ site_desc }}</small>
-            </nav>
+            <a class="ball" href="{{ base_url }}">{{ site_title }}</a>
+            <small>{{ site_desc }}</small>
         </header>
         {% end %}
-        <div class="content">
-            <div class="container">
-                <main class="main">{% block main %}{% end %}</main>
-                <aside class="side">{% block side %}{% end %}</aside>
-            </div>
-        </div>
+        <main class="content">{% block main %}{% end %}</main>
         {% block footer %}
         <footer class="footer">
-            <div class="container">
-                <p>© 2025 <a href="{{ base_url }}">{{ site_title }}</a></p>
-                <small>Powered By <a href="https://github.com/mywaiting/treehole">TreeHole</a> with <a href="https://docs.github.com/issues">Github Issues</a>,
-                    Drived by <a href="https://pages.github.com">Github Pages</a>
-                </small>
-            </div>
+            <p>© 2025 <a href="{{ base_url }}">{{ site_title }}</a></p>
+            <p>Powered By <a href="https://github.com/mywaiting/treehole">TreeHole</a> with <a href="https://docs.github.com/issues">Github Issues</a>,
+                Drived by <a href="https://pages.github.com">Github Pages</a>
+            </p>
         </footer>
         {% end %}
     </div>
