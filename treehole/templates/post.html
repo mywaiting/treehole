@@ -15,44 +15,47 @@
 
 {% block main %}
 <article class="post">
+    <h1>{{ post.get('title') }}</h1>
     <header>
-        <h1>{{ post.get('title') }}</h1>
-        <time datetime="{{ post.get('created_at') }}">{{ post.get('created_at') }}</time>
+        {% set user = post.get('user') %}
+        <img src="{{ user.get('avatar_url') }}" alt="{{ user.get('login') }} avatar" width="40" height="40" loading="lazy">
+        <strong><a href="{{ post.get('source_url') }}">{{ user.get('login') }}</a></strong>
+        <small><time datetime="{{ post.get('created_at') }}">{{ post.get('created_at') }}</time></small>
     </header>
     {% raw post.get('body_html') %}
     <footer>
         {% if post.get('labels') %}
         <section>
-            <h3>Labels</h3>
-            <ul>
+            <h5>Labels</h5>
+            <ul class="menu">
                 {% for label in post.get('labels') %}
-                <li>{{ label.get('name') }}</li>
+                <li class="ball">{{ label.get('name') }}</li>
                 {% end %}
             </ul>
         </section>
         {% end %}
         {% if any(post.get('reactions').values()) %}
         <section>
-            <h3>Reactions</h3>
-            <ul>
+            <h5>Reactions</h5>
+            <ul class="menu">
                 {% for emoji, count in post.get('reactions').items() %}
-                    {% if count %}<li>{{ emoji }} +{{ count }}</li>{% end %}
+                    {% if count %}<li class="ball">{{ github_reactions(emoji) }} +{{ count }}</li>{% end %}
                 {% end %}
             </ul>
         </section>
         {% end %}
         {% if prev_post or next_post %}
         <section>
-            <h3>Nav</h3>
+            <h5>Nav</h5>
             <nav>
-                {% if next_post %}<p>Next: <a href="{{ next_post.get('permanent_url') }}">{{ next_post.get('title') }}</a></p>{% end %}
-                {% if prev_post %}<p>Previous: <a href="{{ prev_post.get('permanent_url') }}">{{ prev_post.get('title') }}</a></p>{% end %}
+                {% if next_post %}<p>Next Post: <a href="{{ next_post.get('permanent_url') }}">{{ next_post.get('title') }}</a></p>{% end %}
+                {% if prev_post %}<p>Previous Post: <a href="{{ prev_post.get('permanent_url') }}">{{ prev_post.get('title') }}</a></p>{% end %}
             </nav>
         </section>
         {% end %}
         {% if related_posts %}
         <section>
-            <h3>Related Posts</h3>
+            <h5>Related Posts</h5>
             <ul>
                 {% for related_post in related_posts %}
                 <li><a href="{{ related_post.get('permanent_url') }}">{{ related_post.get('title') }}</a></li>
@@ -64,21 +67,27 @@
 </article>
 {% if comments %}
 <div class="comments">
-    <h2>Comments ({{ len(comments) }})</h2>
+    <h5>Comments ({{ len(comments) }})</h5>
+    <section>
+        <button id="new-comment" type="button">+ New Comment</button>
+        <button id="oldest-comment" type="button">&lt; Oldest First</button>
+        <button id="newest-comment" type="button">Newest First &gt;</button>
+        <button id="new-reaction" type="button">+ New Reaction</button>
+    </section>
     {% for comment in comments %}
     <article class="comment" id="comment-{{ comment.get('id') }}">
         <header>
             {% set user = comment.get('user') %}
             <img src="{{ user.get('avatar_url') }}" alt="{{ user.get('login') }} avatar" width="40" height="40" loading="lazy">
-            <strong>{{ user.get('login') }}</strong>
-            <time datetime="{{ comment.get('created_at') }}">{{ comment.get('created_at') }}</time>
+            <strong><a href="{{comment.get('source_url') }}">{{ user.get('login') }}</a></strong>
+            <small><time datetime="{{ comment.get('created_at') }}">{{ comment.get('created_at') }}</time></small>
         </header>
         {% raw comment.get('body_html') %}
         {% if any(comment.get('reactions').values()) %}
         <footer>
-            <ul>
+            <ul class="menu">
                 {% for emoji, count in comment.get('reactions').items() %}
-                    {% if count %}<li>{{ emoji }} +{{ count }}</li>{% end %}
+                    {% if count %}<li class="ball">{{ github_reactions(emoji) }} +{{ count }}</li>{% end %}
                 {% end %}
             </ul>
         </footer>
