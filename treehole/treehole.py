@@ -12,7 +12,7 @@ import mistune
 import tornado.locale
 import tornado.template
 
-from .github import GithubClient, GithubIssue, GithubComment
+from .github import GithubClient, GithubIssue, GithubComment, github_reactions
 from .utils import H1AndImageExtractor, only_english, from_iso8601_date, slugify, fread, fwrite
 
 
@@ -437,7 +437,7 @@ class PostArchive:
                     "page": "post",
                     "page_title": post.get("title"),
                     "page_desc": post.get("summary"),
-                    "page_class": "post",
+                    "page_class": "single-post",
                     "post": post,
                     "prev_post": prev_post,
                     "next_post": next_post,
@@ -598,7 +598,9 @@ class TreeHoleApp:
             "default_locale": self.settings.get("default_locale"),
             "base_url": self.settings.get("base_url"),
             "site_title": self.settings.get("site_title"),
-            "site_desc": self.settings.get("site_desc")
+            "site_desc": self.settings.get("site_desc"),
+            # ui_methods
+            "github_reactions":  github_reactions,
         }
         namespace.update(kwargs)
 

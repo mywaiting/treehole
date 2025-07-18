@@ -264,3 +264,26 @@ class GithubUser(dict):
         self["avatar_url"] = user.get("avatar_url")
         self["user_url"] = user.get("html_url")
 
+
+# 
+# utils
+# 
+
+def github_reactions(reaction: str):
+    """返回所有 github emoji 表情
+    """
+    github_reactions = {
+        "+1": "👍",         # Thumbs Up
+        "-1": "👎",         # Thumbs Down
+        "laugh": "😄",      # Laugh (smiley face)
+        "hooray": "🎉",     # Hooray / Celebration
+        "confused": "😕",   # Confused
+        "heart": "❤️",      # Heart
+        "rocket": "🚀",     # Rocket (often used for deployment/launch)
+        "eyes": "👀"        # Eyes (watching/following)
+    }
+    if reaction not in github_reactions:
+        return "YES"
+    
+    return github_reactions[reaction]
+
