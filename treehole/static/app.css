@@ -150,6 +150,12 @@ hr {
     padding: 0.3rem 0.8rem;
 }
 
+.user { overflow: hidden; } /* BFC */
+.user img {
+    float: left;
+    margin: 0 1rem 0 0;
+}
+
 @media (max-width: 37.5rem) { /* 600px */
     body { padding: 0 1rem; }
     h1 { font-size: 1.75rem; }

@@ -16,10 +16,10 @@
 {% block main %}
 <article class="post">
     <h1>{{ post.get('title') }}</h1>
-    <header>
+    <header class="user">
         {% set user = post.get('user') %}
         <img src="{{ user.get('avatar_url') }}" alt="{{ user.get('login') }} avatar" width="40" height="40" loading="lazy">
-        <strong><a href="{{ post.get('source_url') }}">{{ user.get('login') }}</a></strong>
+        <div><a href="{{ post.get('source_url') }}">{{ user.get('login') }}</a></div>
         <small><time datetime="{{ post.get('created_at') }}">{{ post.get('created_at') }}</time></small>
     </header>
     {% raw post.get('body_html') %}
@@ -76,10 +76,10 @@
     </section>
     {% for comment in comments %}
     <article class="comment" id="comment-{{ comment.get('id') }}">
-        <header>
+        <header class="user">
             {% set user = comment.get('user') %}
             <img src="{{ user.get('avatar_url') }}" alt="{{ user.get('login') }} avatar" width="40" height="40" loading="lazy">
-            <strong><a href="{{comment.get('source_url') }}">{{ user.get('login') }}</a></strong>
+            <div><a href="{{comment.get('source_url') }}">{{ user.get('login') }}</a></div>
             <small><time datetime="{{ comment.get('created_at') }}">{{ comment.get('created_at') }}</time></small>
         </header>
         {% raw comment.get('body_html') %}
