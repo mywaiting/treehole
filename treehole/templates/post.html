@@ -68,12 +68,12 @@
 {% if comments %}
 <div class="comments">
     <h5>Comments ({{ len(comments) }})</h5>
-    <section>
-        <button id="new-comment" type="button">+ New Comment</button>
-        <button id="oldest-comment" type="button">&lt; Oldest First</button>
-        <button id="newest-comment" type="button">Newest First &gt;</button>
-        <button id="new-reaction" type="button">+ New Reaction</button>
-    </section>
+    <ul class="menu">
+        <li class="item"><button id="new-comment">+ New Comment</button></li>
+        <li class="item"><button id="oldest-first">&lt; Oldest First</button></li>
+        <li class="item"><button id="newest-first">Newest First &gt;</button></li>
+        <li class="item"><button id="new-reaction">+ New Reaction</button></li>
+    </ul>
     {% for comment in comments %}
     <article class="comment" id="comment-{{ comment.get('id') }}">
         <header class="user">

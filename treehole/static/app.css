@@ -143,6 +143,8 @@ hr {
     list-style: none;
     padding: 0;
 }
+.item { display: inline-block; }
+
 .ball {
     display: inline-block;
     border: 1px solid var(--color-border);
@@ -154,6 +156,10 @@ hr {
 .user img {
     float: left;
     margin: 0 1rem 0 0;
+}
+.user div {
+    overflow: hidden;
+    margin-bottom: 0.2rem;
 }
 
 @media (max-width: 37.5rem) { /* 600px */
