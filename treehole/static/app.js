@@ -19,7 +19,8 @@ const on_domcontent_loaded = callback => {
 
 // new_comment
 const new_comment = (btn = "new-comment") => {
-    document.getElementById(btn).addEventListener("click", event => {
+    const element = document.getElementById(btn)
+    element && element.addEventListener("click", event => {
         const url = document.querySelector(".post .user a").getAttribute("href")
         window.open(url)
     })
@@ -42,12 +43,14 @@ const sort_comments = (selector = ".comments", order = "asc") => {
     element.appendChild(fragment)
 }
 const sort_comments_oldest_first = (btn = "oldest-first") => {
-    document.getElementById(btn).addEventListener("click", event => {
+    const element = document.getElementById(btn)
+    element && element.addEventListener("click", event => {
         sort_comments(".comments", "asc")
     })
 }
 const sort_comments_newest_first = (btn = "newest-first") => {
-    document.getElementById(btn).addEventListener("click", event => {
+    const element = document.getElementById(btn)
+    element && element.addEventListener("click", event => {
         sort_comments(".comments", "desc")
     })
 }
@@ -57,7 +60,8 @@ on_domcontent_loaded(sort_comments_newest_first)
 
 // new_reaction
 const new_reaction = (btn = "new-reaction") => {
-    document.getElementById(btn).addEventListener("click", event => {
+    const element = document.getElementById(btn)
+    element && element.addEventListener("click", event => {
         const url = document.querySelector(".post .user a").getAttribute("href")
         window.open(url)
     })
