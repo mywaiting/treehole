@@ -13,7 +13,7 @@
 <div class="posts">
     {% for post in posts %}
     <article class="post">
-        <h1>{{ post.get('title') }}</h1>
+        <h1><a href="{{ post.get('permanent_url') }}">{{ post.get('title') }}</a></h1>
         <header class="user">
             {% set user = post.get('user') %}
             <img src="{{ user.get('avatar_url') }}" alt="{{ user.get('login') }} avatar" width="40" height="40" loading="lazy">

@@ -13,7 +13,7 @@
     --font-mono: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
 
     --max-width: 40rem; /* 640px */
-    --line-height: 1.15;
+    --line-height: 1.25;
 }
 @media (prefers-color-scheme: dark) {
     :root {
@@ -152,14 +152,10 @@ hr {
     padding: 0.3rem 0.8rem;
 }
 
-.user { overflow: hidden; } /* BFC */
+.user, .user div { overflow: hidden; } /* BFC */
 .user img {
     float: left;
     margin: 0 1rem 0 0;
-}
-.user div {
-    overflow: hidden;
-    margin-bottom: 0.2rem;
 }
 
 @media (max-width: 37.5rem) { /* 600px */
