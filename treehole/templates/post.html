@@ -65,13 +65,12 @@
         {% end %}
     </footer>
 </article>
-{% if comments %}
 <div class="comments">
     <h5>Comments ({{ len(comments) }})</h5>
     <ul class="menu">
         <li class="item"><button id="new-comment">+ New Comment</button></li>
-        <li class="item"><button id="oldest-first">&lt; Oldest First</button></li>
-        <li class="item"><button id="newest-first">Newest First &gt;</button></li>
+        {% if comments %}<li class="item"><button id="oldest-first">&lt; Oldest First</button></li>{% end %}
+        {% if comments %}<li class="item"><button id="newest-first">Newest First &gt;</button></li>{% end %}
         <li class="item"><button id="new-reaction">+ New Reaction</button></li>
     </ul>
     {% for comment in comments %}
@@ -95,7 +94,6 @@
     </article>
     {% end %}
 </div>
-{% end %}
 {% end %}
 
 {% block side %}{% end %}
