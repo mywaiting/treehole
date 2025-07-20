@@ -591,11 +591,19 @@ class TreeHoleApp:
         issues = [ dict(GithubIssue(issue)) for issue in issues ]
         comments = [ dict(GithubComment(comment)) for comment in comments ]
 
+        logger.info(f'count data before filters, issues={len(issues)}, comments={len(comments)}')
+
+        # 跳过所有带有 pull_request 的 issue 这个没有必要出现在网站内容中
+        issues = [ issue for issue in issues if "pull_request" not in issue ]
+        # 筛选所有 issue.state='open' 的 issue 其余状态的 issue 不适宜出现在网站内容中
+        issues = [ issue for issue in issues if issue.get("state") == "open" ]
+
+        logger.info(f'count data after filters, issues={len(issues)}, comments={len(comments)}')
+
         # 所有数据按照 TreeHoleModels 再转换一遍，符合当前程序使用要求
         posts = [ dict(TreeHolePost(issue)) for issue in issues ]
         comments = [ dict(TreeHoleComment(comment)) for comment in comments ]
 
-        logger.info(f'count data, posts={len(posts)}, comments={len(comments)}')
         return (posts, comments)
 
     def render(self, template_name: str, **kwargs):
