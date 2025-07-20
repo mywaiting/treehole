@@ -28,7 +28,22 @@
 <!-- DailyArchive -->
 <!-- 按日列出全部的文章列表（标题、日期、文章截断长文本、精简标签显示） -->
 {% if page == 'daily' %}
-
+<h2>{{ page_title }}</h2>
+<div class="posts">
+    {% for post in posts %}
+    <article class="post">
+        <h3><a href="{{ post.get('permanent_url') }}">{{ post.get('title') }}</a></h3>
+        <header class="user">
+            {% set user = post.get('user') %}
+            <img src="{{ user.get('avatar_url') }}" alt="{{ user.get('login') }} avatar" width="40" height="40" loading="lazy">
+            <div><a href="{{ post.get('source_url') }}">{{ user.get('login') }}</a></div>
+            <small><time datetime="{{ post.get('created_at') }}">{{ post.get('created_at') }}</time></small>
+        </header>
+        <p class="summary">{% raw post.get('summary') %}</p>
+        <p>[... <a href="{{ post.get('permanent_url') }}">more</a>]</p>
+    </article>
+    {% end %}
+</div>
 {% end %}
 <!-- MonthlyArchive -->
 <!-- 按日列出对应月份的文章列表（标题、日期、文章截断短文本、精简标签显示） -->
