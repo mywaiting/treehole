@@ -139,7 +139,7 @@ class IndexArchive:
         self.posts.sort(key=lambda post: post["_datetime"], reverse=True)
 
         # 首页只需要输出最新的三篇文章
-        posts = self.posts[0:10]
+        posts = self.posts[0:3]
 
         # 此处可以清理全部的 self.posts 此变量后面作为最终结果输出
         # 实际处理好的 posts 每个单一的元素都能单独输出为对应的 index_archive 页面
@@ -201,7 +201,7 @@ class DailyArchive:
                     current_posts = posts[year][month][day]
                     
                     # 页面标题 weekday, day, month_name, year
-                    title = f'Archive for {current_day.strftime("%A")}, {day}, {current_day.strftime("%B")}, {year}'
+                    title = f'{current_day.strftime("%A")}, {day}, {current_day.strftime("%B")}, {year}'
                     # 按日列出全部的文章列表（标题、日期、文章截断长文本、精简标签显示）
                     daily_posts = []
                     for post in current_posts:
@@ -261,29 +261,38 @@ class MonthlyArchive:
         # 遍历全部处理好的 posts 数据嵌套结构，按天汇总输出所有的 monthly_archive 页面数据
         for year in sorted(posts.keys(), reverse=True):
             for month in sorted(posts[year].keys(), reverse=True):
-                for day in sorted(posts[year][month].keys(), reverse=True):
-                    current_day = datetime.date(year, month, day)
-                    current_posts = posts[year][month][day]
-                    
-                    # 页面标题
-                    title = f'Archive for {current_day.strftime("%B")}, {year}'
-                    # 按日列出全部的文章列表（标题、日期、文章截断长文本、精简标签显示）
-                    daily_posts = []
-                    for post in current_posts:
-                        daily_posts.append(post)
+                # 页面标题
+                month_dt = datetime.date(year, month, 1)
+                title = f'{month_dt.strftime("%B")}, {year}'
 
-                    # 所有数据缓存到 self.posts 方便外部使用
-                    self.posts.append({
-                        "filepath": f"./{year}/{month:02d}/index.html",
-                        "template_name": "list.html",
-                        "template_vars": {
-                            "page": "monthly",
-                            "page_title": title,
-                            "page_desc": title,
-                            "page_class": "daily",
-                            "posts": daily_posts
-                        }
+                # 注意：此处将会执行按日检查，生成按日/daily 链接，不然无法导航到 daily_archive 页面
+                # 注意：可能存在单日有多篇 posts 的情况，存在多篇 posts 的只显示一个按日/daily 链接
+                _posts = []
+                for day in sorted(posts[year][month].keys(), reverse=True):
+                    # 将按日/daily 链接参考 post 的格式来生成，只有 title/permanent_url 两个字段
+                    day_dt = datetime.date(year, month, day)
+                    _posts.append({
+                        "title": f'{day_dt.strftime("%B")} {day_dt.strftime("%d")}, {year}',
+                        "permanent_url": f'/{day_dt.year}/{day_dt.month:02d}/{day_dt.day:02d}/'
                     })
+                    # 接下来才是单日对应的 posts 文章列表
+                    # 按日列出全部的文章列表（标题、日期、文章截断长文本、精简标签显示）
+                    daily_posts = posts[year][month][day]
+                    for post in daily_posts:
+                        _posts.append(post)
+
+                # 所有数据缓存到 self.posts 方便外部使用
+                self.posts.append({
+                    "filepath": f"./{year}/{month:02d}/index.html",
+                    "template_name": "list.html",
+                    "template_vars": {
+                        "page": "monthly",
+                        "page_title": title,
+                        "page_desc": title,
+                        "page_class": "daily",
+                        "posts": _posts
+                    }
+                })
     
     def __iter__(self):
         return iter(self.posts)
@@ -306,18 +315,16 @@ class YearlyArchive:
         self.posts.sort(key=lambda post: post["_datetime"], reverse=True)
 
         # 构建 年 → 月 → [posts] 的嵌套结构
-        posts = collections.defaultdict(         # year
-            lambda: collections.defaultdict(     # month
-                lambda: collections.defaultdict( # day
-                    list                         # [posts]
-                ) 
+        posts = collections.defaultdict(     # year
+            lambda: collections.defaultdict( # month
+                list                         # [posts]
             )
         )
 
         # 遍历全部 posts 按照上述数据嵌套结构分类
         for post in self.posts:
             dt = post["_datetime"]
-            posts[dt.year][dt.month][dt.day].append(post)
+            posts[dt.year][dt.month].append(post)
         
         # 此处可以清理全部的 self.posts 此变量后面作为最终结果输出
         # 实际处理好的 posts 每个单一的元素都能单独输出为对应的 yearly_archive 页面
@@ -325,30 +332,38 @@ class YearlyArchive:
 
         # 遍历全部处理好的 posts 数据嵌套结构，按天汇总输出所有的 yearly_archive 页面数据
         for year in sorted(posts.keys(), reverse=True):
-            for month in sorted(posts[year].keys(), reverse=True):
-                for day in sorted(posts[year][month].keys(), reverse=True):
-                    current_day = datetime.date(year, month, day)
-                    current_posts = posts[year][month][day]
-                    
-                    # 页面标题
-                    title = f'Archive for {year}'
-                    # 按日列出全部的文章列表（标题、日期、文章截断长文本、精简标签显示）
-                    daily_posts = []
-                    for post in current_posts:
-                        daily_posts.append(post)
+            # 页面标题
+            title = f'Archive for {year}'
 
-                    # 所有数据缓存到 self.posts 方便外部使用
-                    self.posts.append({
-                        "filepath": f"./{year}/index.html",
-                        "template_name": "list.html",
-                        "template_vars": {
-                            "page": "yearly",
-                            "page_title": title,
-                            "page_desc": title,
-                            "page_class": "yearly",
-                            "posts": daily_posts
-                        }
-                    })
+            # 注意：此处将会按月检查，生成按月/monthly 链接，不然无法导航到 monthly_archive
+            _posts = []
+            for month in sorted(posts[year].keys(), reverse=True):
+                # 将按月/monthly 链接参考 post 的格式来生成，只有 title/permanent_url 两个字段
+                month_dt = datetime.date(year, month, 1)
+                _posts.append({
+                    "title": f'{month_dt.strftime("%B")} ({len(posts[year][month])})',
+                    "permanent_url": f'/{month_dt.year}/{month_dt.month:02d}/'
+                })
+                # 接下来才是月份对应的 posts 文章列表
+                # 按日列出全部的文章列表（标题、日期、文章截断长文本、精简标签显示）
+                monthly_posts = posts[year][month]
+                # 当月内的文章，需要反向排序
+                monthly_posts = list(reversed(monthly_posts))
+                for post in monthly_posts:
+                    _posts.append(post)
+
+            # 所有数据缓存到 self.posts 方便外部使用
+            self.posts.append({
+                "filepath": f"./{year}/index.html",
+                "template_name": "list.html",
+                "template_vars": {
+                    "page": "yearly",
+                    "page_title": title,
+                    "page_desc": title,
+                    "page_class": "yearly",
+                    "posts": _posts
+                }
+            })
     
     def __iter__(self):
         return iter(self.posts)
@@ -580,6 +595,7 @@ class TreeHoleApp:
         posts = [ dict(TreeHolePost(issue)) for issue in issues ]
         comments = [ dict(TreeHoleComment(comment)) for comment in comments ]
 
+        logger.info(f'count data, posts={len(posts)}, comments={len(comments)}')
         return (posts, comments)
 
     def render(self, template_name: str, **kwargs):
