@@ -48,13 +48,52 @@
 <!-- MonthlyArchive -->
 <!-- 按日列出对应月份的文章列表（标题、日期、文章截断短文本、精简标签显示） -->
 {% if page == 'monthly' %}
-
+<h2>{{ page_title }}</h2>
+<div class="posts">
+    {% for post in posts %}
+    <article class="post">
+        <h3><a href="{{ post.get('permanent_url') }}">{{ post.get('title') }}</a></h3>
+        {% if post.get('user') %}
+        <header class="user">
+            {% set user = post.get('user') %}
+            <img src="{{ user.get('avatar_url') }}" alt="{{ user.get('login') }} avatar" width="40" height="40" loading="lazy">
+            <div><a href="{{ post.get('source_url') }}">{{ user.get('login') }}</a></div>
+            <small><time datetime="{{ post.get('created_at') }}">{{ post.get('created_at') }}</time></small>
+        </header>
+        {% end %}
+        {% if post.get('summary') %}<p class="summary">{% raw post.get('summary') %}</p>{% end %}
+        {% if post.get('summary') %}<p>[... <a href="{{ post.get('permanent_url') }}">more</a>]</p>{% end %}
+    </article>
+    {% end %}
+</div>
 {% end %}
 <!-- YearlyArchive -->
 <!-- 按月份列出对应年份的文章列表（标题、日期） -->
 {% if page == 'yearly' %}
-<ul>
-
+<h2>{{ page_title }}</h2>
+<ul class="posts">
+    {% set monthly_title_post = None %}
+    {% for post in posts %}
+        {% if not post.get('user') %}
+            <!-- 如果存在 monthly_title_post 则闭合当前 sub-list -->
+            {% if monthly_title_post is not None %}
+                </ul>
+            </li>
+            {% end %}
+            <li class="monthly"><a href="{{ post.get('permanent_url') }}">{{ post.get('title') }}</a></li>
+            <ul>
+            {% set monthly_title_post = post %}
+        {% else %}
+        <li class="post">
+            <time>{{ post.get('_datetime').strftime("%m-%d") }}</time>: <a href="{{ post.get('permanent_url') }}">{{ post.get('title') }}</a>
+        </li>
+        {% end %}
+    {% end %}
+    <!-- 如果存在 monthly_title_post 则闭合当前 sub-list -->
+    {% if monthly_title_post is not None %}
+        </ul>
+    </li>
+    {% end %}
 </ul>
 {% end %}
 {% end %}
