@@ -7,13 +7,15 @@ import logging
 import os
 import os.path
 import shutil
+import urllib.parse
 
 import mistune
 import tornado.locale
 import tornado.template
 
 from .github import GithubClient, GithubIssue, GithubComment, github_reactions
-from .utils import H1AndImageExtractor, only_english, from_iso8601_date, slugify, fread, fwrite
+from .utils import (H1AndImageExtractor, only_english, from_iso8601_date, 
+    slugify, fwrite, make_feedmap, make_sitemap)
 
 
 
@@ -122,7 +124,7 @@ class TreeHoleComment(dict):
 
 
 # 
-# iters
+# iters/archive
 # 
 
 class IndexArchive:
@@ -468,10 +470,14 @@ class PostArchive:
         return len(self.posts)
 
 
-class FeedArchive:
+# 
+# iters/generator
+# 
+
+class FeedmapGenerator:
     """按 Feed/Atom 列表输出，按日列出最新十篇文章列表（标题、日期、文章截断长文本、精简标签显示）
     """
-    def __init__(self, posts: list[TreeHolePost]):
+    def __init__(self, posts: list[TreeHolePost], feed_info: dict, base_url: str):
         self.posts = copy.deepcopy(posts)
 
         # 短暂为所有 posts 增加单独的 _datetime 字段用于排序和输出，避免重复转换
@@ -481,12 +487,65 @@ class FeedArchive:
         # 全部 posts 按照时间从最新到最旧排序，此处原地排序/逆序
         self.posts.sort(key=lambda post: post["_datetime"], reverse=True)
 
-        # Feed 只需要输出最新的五篇文章
-        posts = self.posts[0:5]
+        # Feed 只需要输出最新的十篇文章
+        posts = self.posts[0:10]
+
+        # 遍历所有 posts 得到 feed.entries 全部的数据
+        entries = []
+        for post in posts:
+            entries.append({
+                "title": post.get("title"),
+                "link": urllib.parse.urljoin(base_url, post.get("permanent_url")),
+                "updated": post.get("updated_at"), # rfc3339_date
+                "summary": post.get("summary")
+            })
+
+        # 此处可以清理全部的 self.posts 此变量后面作为最终结果输出
+        # 实际处理好的 posts 每个单一的元素都能单独输出为对应的 generator 页面
+        self.posts = [{
+            "filepath": "./feedmap.xml", # 文件输出路径
+            "map_data": {
+                "feed_info": feed_info,
+                "entries": entries
+            }
+        }]
+
+    def __iter__(self):
+        return iter(self.posts)
+    
+    def __len__(self):
+        return len(self.posts)
+
+
+class SitemapGenerator:
+    """输出 sitemap.xml 全站所有的 urls 
+    """
+    def __init__(self, posts: list[TreeHolePost], base_url: str):
+        self.posts = copy.deepcopy(posts)
+
+        # 短暂为所有 posts 增加单独的 _datetime 字段用于排序和输出，避免重复转换
+        for post in self.posts:
+            post["_datetime"] = from_iso8601_date(post.get("created_at"))
+
+        # 全部 posts 按照时间从最旧到最新排序，此处**不要**原地排序/逆序
+        self.posts.sort(key=lambda post: post["_datetime"])
+
+        # Sitemap 需要输出全站所有的文章链接
+        posts = []
+        for post in self.posts:
+            posts.append({
+                "loc": urllib.parse.urljoin(base_url, post.get("permanent_url")),
+                "lastmod": post.get("updated_at")
+            })
 
         # 此处可以清理全部的 self.posts 此变量后面作为最终结果输出
         # 实际处理好的 posts 每个单一的元素都能单独输出为对应的 daily_archive 页面
-        self.posts = posts
+        self.posts = [{
+            "filepath": "./sitemap.xml",
+            "map_data": {
+                "urls": posts
+            }
+        }]
 
     def __iter__(self):
         return iter(self.posts)
@@ -660,7 +719,7 @@ class TreeHoleApp:
         # 加载数据
         posts, comments = self.load_data()
 
-        # 按照 Archive 类别处理输出
+        # 按照 Archive/归档 类别处理输出
         archives = {
             "index": IndexArchive(posts),
             "daily": DailyArchive(posts),
@@ -668,12 +727,30 @@ class TreeHoleApp:
             "yearly": YearlyArchive(posts),
             "post": PostArchive(posts, comments)
         }
-        for archive, posts in archives.items():
+        for archive, _posts in archives.items():
             logger.info(f'render {archive}, items={len(archives[archive])}')
-            for post in posts:
+            for post in _posts:
                 filetext = self.render(post.get("template_name"), **post.get("template_vars"))
                 fwrite(os.path.join(self.settings.get("output_dir"), post.get("filepath")), filetext)
         
+        # 按照 Generator/生成器 类别处理输出
+        feedmap = FeedmapGenerator(posts, {
+                "title": self.settings.get("site_title"),
+                "link": self.settings.get("base_url")
+            }, self.settings.get("base_url")
+        )
+        sitemap = SitemapGenerator(posts, self.settings.get("base_url"))
+        generators = {
+            "feedmap": (feedmap, make_feedmap),
+            "sitemap": (sitemap, make_sitemap)
+        }
+        for generator, t in generators.items():
+            _posts, func = t
+            logger.info(f'make {generator}, items={len(posts)}')
+            for post in _posts:
+                filetext = func(**post.get("map_data"))
+                fwrite(os.path.join(self.settings.get("output_dir"), post.get("filepath")), filetext)
+
         # 复制静态文件
         self.copy_file()
         

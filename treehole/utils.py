@@ -10,7 +10,7 @@ import os.path
 import re
 import string
 import unicodedata
-import xml.sax.saxutils
+import xml.etree.ElementTree as ET
 
 
 
@@ -65,14 +65,6 @@ def to_rfc3389_date(dt: datetime.datetime):
     return dt.isoformat().replace('+00:00', 'Z')
 
 
-def has_chinese(text: str):
-    """检测传入的字符串是否存在中文
-    """
-    if re.match(r'[\u4E00-\u9FFF\u3400-\u4DBF\u20000-\u2A6DF\u2A700-\u2B73F\u2B740-\u2B81F\u2B820-\u2CEAF]', text):
-        return True
-    return False
-
-
 def only_english(text: str):
     """是否只存在英文，包括英文符号/标点/数字
     """
@@ -82,58 +74,75 @@ def only_english(text: str):
     return all(c in allowed_chars for c in text)
 
 
-class AtomFeedGenerator:
-    """极其精简 ATOM Feed 生成器
+def make_feedmap(feed_info, entries):
+    """使用 ElementTree 实现的精简版 atom_feed.xml 生成器
 
-    - 注意：代码逻辑参考自 https://github.com/getpelican/feedgenerator
+    - 注意：此处要求 feed_info=dict(title=str, link=str, [updated=str]) 数据结构
+    - 注意：此处要求 entries = list(dict(title=str, link=str, updated=str, summary=str)) 数据结构
     - 注意 ATOM Spec: http://atompub.org/2005/07/11/draft-ietf-atompub-format-10.html
     """
     mime_type = "application/atom+xml; charset=utf-8"
     ns = "http://www.w3.org/2005/Atom"
 
-    def __init__(self, title, feed_id, updated=None):
-        self.title = title
-        self.feed_id = feed_id
-        self.updated = updated or datetime.utcnow().isoformat() + 'Z'
-        self.entries = []
-    
-    def add_entry(self, title, entry_id, updated, content):
-        self.entries.append({
-            'title': title,
-            'id': entry_id,
-            'updated': updated, # rfc3339_date
-            'content': content,
-        })
-    
-    def generate(self):
-        buffer = io.StringIO()
-        doc = xml.sax.saxutils.XMLGenerator(buffer, encoding='utf-8')
-        doc.startDocument()
-        doc.startElement("doc", {"xmlns": self.ns})
+    feed = ET.Element("feed", { "xmlns": ns })
 
-        # Feed metadata
-        self._write_text_element(doc, "title", self.title)
-        self._write_text_element(doc, "id", self.doc_id)
-        self._write_text_element(doc, "updated", self.updated)
+    # Feed 元信息
+    title = ET.SubElement(feed, "title")
+    title.text = feed_info.get("title", "My Feed")
 
-        # Entries
-        for entry in self.entries:
-            doc.startElement("entry", {})
-            self._write_text_element(doc, "title", entry["title"])
-            self._write_text_element(doc, "id", entry["id"])
-            self._write_text_element(doc, "updated", entry["updated"])
-            self._write_text_element(doc, "content", entry["content"], attrs={"type": "text"})
-            doc.endElement("entry")
+    link = ET.SubElement(feed, "link", {"href": feed_info["link"]})
 
-        doc.endElement("doc")
-        doc.endDocument()
-        return buffer.getvalue()
+    updated = ET.SubElement(feed, "updated")
+    updated.text = feed_info.get("updated", datetime.datetime.utcnow().isoformat() + "Z") # rfc3339_date
 
-    def _write_text_element(self, xml, name, text, attrs=None):
-        attrs = attrs or {}
-        xml.startElement(name, attrs)
-        xml.characters(text)
-        xml.endElement(name)
+    id_tag = ET.SubElement(feed, "id")
+    id_tag.text = feed_info.get("id", feed_info["link"])
+
+    # Feed 条目
+    for entry in entries:
+        entry_tag = ET.SubElement(feed, "entry")
+
+        entry_title = ET.SubElement(entry_tag, "title")
+        entry_title.text = entry["title"]
+
+        entry_link = ET.SubElement(entry_tag, "link", {"href": entry["link"]})
+
+        entry_id = ET.SubElement(entry_tag, "id")
+        entry_id.text = entry.get("id", entry["link"])
+
+        entry_updated = ET.SubElement(entry_tag, "updated") # rfc3339_date
+        entry_updated.text = entry["updated"]
+
+        if "summary" in entry:
+            entry_summary = ET.SubElement(entry_tag, "summary")
+            entry_summary.text = entry["summary"]
+
+    tree = ET.ElementTree(feed)
+    fd = io.BytesIO()
+    tree.write(fd, encoding="utf-8", xml_declaration=True)
+    return fd.getvalue().decode("utf-8")
+
+
+def make_sitemap(urls: list[dict(loc=str, lastmod=str)]):
+    """使用 ElementTree 实现的精简版 sitemap.xml 生成器
+
+    - 注意：此处要求 urls = [dict(loc=str, lastmod=str)] 必须存在 loc 字段
+    """
+    ns = "http://www.sitemaps.org/schemas/sitemap/0.9"
+    urlset = ET.Element("urlset", { "xmlns": ns })
+
+    for entry in urls:
+        url = ET.SubElement(urlset, "url")
+        loc = ET.SubElement(url, "loc")
+        loc.text = entry["loc"]
+        if "lastmod" in entry:
+            lastmod = ET.SubElement(url, "lastmod")
+            lastmod.text = entry["lastmod"]  # 应为 YYYY-MM-DD 格式
+
+    tree = ET.ElementTree(urlset)
+    fd = io.BytesIO()
+    tree.write(fd, encoding='utf-8', xml_declaration=True)
+    return fd.getvalue().decode("utf-8")
 
 
 class H1AndImageExtractor(html.parser.HTMLParser):
