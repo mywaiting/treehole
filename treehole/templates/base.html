@@ -23,9 +23,12 @@
         <main class="content">{% block main %}{% end %}</main>
         {% block footer %}
         <footer class="footer">
-            <p>© 2025 <a href="{{ base_url }}">{{ site_title }}</a></p>
+            <p>© {{ datetime.datetime.now().year }} <a href="{{ base_url }}">{{ site_title }}</a></p>
             <p>Powered By <a href="https://github.com/mywaiting/treehole">TreeHole</a> with <a href="https://docs.github.com/issues">Github Issues</a>,
                 Drived by <a href="https://pages.github.com">Github Pages</a>
+            </p>
+            <p>&gt; <a href="/feedmap.xml">Feedmap</a>
+                &gt; <a href="/sitemap.xml">Sitemap</a>
             </p>
         </footer>
         {% end %}

@@ -674,6 +674,8 @@ class TreeHoleApp:
         t = loader.load(template_name)
         locale = tornado.locale.get(self.settings.get("default_locale"))
         namespace = {
+            "datetime": datetime,
+            # tornado module
             "locale": locale,
             "_": locale.translate,
             "pgettext": locale.pgettext,
@@ -746,7 +748,7 @@ class TreeHoleApp:
         }
         for generator, t in generators.items():
             _posts, func = t
-            logger.info(f'make {generator}, items={len(posts)}')
+            logger.info(f'make {generator}, items={len(_posts)}')
             for post in _posts:
                 filetext = func(**post.get("map_data"))
                 fwrite(os.path.join(self.settings.get("output_dir"), post.get("filepath")), filetext)
