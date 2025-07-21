@@ -2,20 +2,21 @@ import asyncio
 import collections
 import copy
 import datetime
+import io
 import json
 import logging
 import os
 import os.path
 import shutil
 import urllib.parse
+import xml.etree.ElementTree as ET
 
 import mistune
 import tornado.locale
 import tornado.template
 
 from .github import GithubClient, GithubIssue, GithubComment, github_reactions
-from .utils import (H1AndImageExtractor, only_english, from_iso8601_date, 
-    slugify, fwrite, make_feedmap, make_sitemap)
+from .utils import H1AndImageExtractor, only_english, from_iso8601_date, slugify, fwrite
 
 
 
@@ -496,18 +497,16 @@ class FeedmapGenerator:
             entries.append({
                 "title": post.get("title"),
                 "link": urllib.parse.urljoin(base_url, post.get("permanent_url")),
+                "created": post.get("created_at"), # rfc3339_date
                 "updated": post.get("updated_at"), # rfc3339_date
-                "summary": post.get("summary")
+                "summary": post.get("summary") or post.get("title"),
             })
 
         # 此处可以清理全部的 self.posts 此变量后面作为最终结果输出
         # 实际处理好的 posts 每个单一的元素都能单独输出为对应的 generator 页面
         self.posts = [{
             "filepath": "./feedmap.xml", # 文件输出路径
-            "map_data": {
-                "feed_info": feed_info,
-                "entries": entries
-            }
+            "filetext": self.make_feedmap(feed_info, entries)
         }]
 
     def __iter__(self):
@@ -515,6 +514,64 @@ class FeedmapGenerator:
     
     def __len__(self):
         return len(self.posts)
+    
+    def make_feedmap(self, feed_info, entries):
+        """使用 ElementTree 实现的精简版 atom_feed.xml 生成器
+
+        - 注意：此处要求 feed_info=dict(title=str, link=str, [updated=str]) 数据结构
+        - 注意：此处要求 entries = list(dict(title=str, link=str, updated=str, summary=str)) 数据结构
+        - 注意 ATOM Spec: http://atompub.org/2005/07/11/draft-ietf-atompub-format-10.html
+        """
+        mime_type = "application/atom+xml; charset=utf-8"
+        ns = "http://www.w3.org/2005/Atom"
+
+        feed = ET.Element("feed", { "xmlns": ns })
+
+        # Feed 元信息
+        title = ET.SubElement(feed, "title")
+        title.text = feed_info.get("title", "My Feed")
+
+        link = ET.SubElement(feed, "link", {"href": feed_info["link"]})
+
+        updated = ET.SubElement(feed, "updated")
+        updated.text = feed_info.get("updated", datetime.datetime.utcnow().isoformat() + "Z") # rfc3339_date
+
+        id_tag = ET.SubElement(feed, "id")
+        id_tag.text = feed_info.get("id", feed_info["link"])
+
+        # Feed 条目
+        for entry in entries:
+            entry_tag = ET.SubElement(feed, "entry")
+
+            if "title" in entry:
+                entry_title = ET.SubElement(entry_tag, "title")
+                entry_title.text = entry["title"]
+            else:
+                raise ValueError(f'feed entries required title')
+
+            if "link" in entry:
+                entry_link = ET.SubElement(entry_tag, "link", {"href": entry["link"]})
+                entry_id = ET.SubElement(entry_tag, "id")
+                entry_id.text = entry.get("id", entry["link"])
+            else:
+                raise ValueError(f'feed entries required link')
+
+            if "created" in entry:
+                entry_created = ET.SubElement(entry_tag, "created") # rfc3339_date
+                entry_created.text = entry["created"]
+
+            if "updated" in entry:
+                entry_updated = ET.SubElement(entry_tag, "updated") # rfc3339_date
+                entry_updated.text = entry["updated"]
+
+            if "summary" in entry:
+                entry_summary = ET.SubElement(entry_tag, "summary")
+                entry_summary.text = entry["summary"]
+
+        tree = ET.ElementTree(feed)
+        fd = io.BytesIO()
+        tree.write(fd, encoding="utf-8", xml_declaration=True)
+        return fd.getvalue().decode("utf-8")
 
 
 class SitemapGenerator:
@@ -542,9 +599,7 @@ class SitemapGenerator:
         # 实际处理好的 posts 每个单一的元素都能单独输出为对应的 daily_archive 页面
         self.posts = [{
             "filepath": "./sitemap.xml",
-            "map_data": {
-                "urls": posts
-            }
+            "filetext": self.make_sitemap(posts)
         }]
 
     def __iter__(self):
@@ -552,6 +607,27 @@ class SitemapGenerator:
     
     def __len__(self):
         return len(self.posts)
+    
+    def make_sitemap(self, urls: list[dict(loc=str, lastmod=str)]):
+        """使用 ElementTree 实现的精简版 sitemap.xml 生成器
+
+        - 注意：此处要求 urls = [dict(loc=str, lastmod=str)] 必须存在 loc 字段
+        """
+        ns = "http://www.sitemaps.org/schemas/sitemap/0.9"
+        urlset = ET.Element("urlset", { "xmlns": ns })
+
+        for entry in urls:
+            url = ET.SubElement(urlset, "url")
+            loc = ET.SubElement(url, "loc")
+            loc.text = entry["loc"]
+            if "lastmod" in entry:
+                lastmod = ET.SubElement(url, "lastmod")
+                lastmod.text = entry["lastmod"]  # 应为 YYYY-MM-DD 格式
+
+        tree = ET.ElementTree(urlset)
+        fd = io.BytesIO()
+        tree.write(fd, encoding='utf-8', xml_declaration=True)
+        return fd.getvalue().decode("utf-8")
 
 
 # 
@@ -743,14 +819,13 @@ class TreeHoleApp:
         )
         sitemap = SitemapGenerator(posts, self.settings.get("base_url"))
         generators = {
-            "feedmap": (feedmap, make_feedmap),
-            "sitemap": (sitemap, make_sitemap)
+            "feedmap": feedmap,
+            "sitemap": sitemap,
         }
-        for generator, t in generators.items():
-            _posts, func = t
+        for generator, _posts in generators.items():
             logger.info(f'make {generator}, items={len(_posts)}')
             for post in _posts:
-                filetext = func(**post.get("map_data"))
+                filetext = post.get("filetext")
                 fwrite(os.path.join(self.settings.get("output_dir"), post.get("filepath")), filetext)
 
         # 复制静态文件
