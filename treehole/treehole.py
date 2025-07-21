@@ -292,7 +292,7 @@ class MonthlyArchive:
                         "page": "monthly",
                         "page_title": title,
                         "page_desc": title,
-                        "page_class": "daily",
+                        "page_class": "monthly",
                         "posts": _posts
                     }
                 })
