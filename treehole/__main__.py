@@ -29,8 +29,6 @@ logger = logging.getLogger("treehole")
 
 
 
-
-
 def main():
     tornado.options.parse_command_line()
 
