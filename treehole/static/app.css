@@ -175,9 +175,9 @@ hr {
     }
     a::after {
         content: " (" attr(href) ")";
-        font-size: 90%;
+        font-size: 80%;
     }
-    nav, aside, footer {
+    nav, menu, aside, footer {
         display: none !important;
     }
     pre, code {
@@ -193,5 +193,12 @@ hr {
     }
     table {
       page-break-inside: avoid;
+    }
+    .content {
+        columns: 2;
+        column-gap: 2rem;
+    }
+    .comments {
+        display: none;
     }
 }

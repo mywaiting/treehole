@@ -67,12 +67,12 @@
 </article>
 <div class="comments">
     <h5>Comments ({{ len(comments) }})</h5>
-    <ul class="menu">
+    <menu class="menu">
         <li class="item"><button id="new-comment">+ New Comment</button></li>
         {% if comments %}<li class="item"><button id="oldest-first">&lt; Oldest First</button></li>{% end %}
         {% if comments %}<li class="item"><button id="newest-first">Newest First &gt;</button></li>{% end %}
         <li class="item"><button id="new-reaction">+ New Reaction</button></li>
-    </ul>
+    </menu>
     {% for comment in comments %}
     <article class="comment" id="comment-{{ comment.get('id') }}">
         <header class="user">
