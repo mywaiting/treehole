@@ -5,6 +5,7 @@ import datetime
 import io
 import json
 import logging
+import re
 import os
 import os.path
 import shutil
@@ -532,6 +533,7 @@ class FeedmapGenerator:
         title.text = feed_info.get("title", "My Feed")
 
         link = ET.SubElement(feed, "link", {"href": feed_info["link"]})
+        hub_link = ET.SubElement(feed, "link", {"href": "https://pubsubhubbub.appspot.com/", "rel": "hub"})
 
         updated = ET.SubElement(feed, "updated")
         updated.text = feed_info.get("updated", datetime.datetime.utcnow().isoformat() + "Z") # rfc3339_date
@@ -644,6 +646,7 @@ class TreeHoleApp:
 
         data_path = self.settings.get("data_path")
         self.settings.setdefault("output_dir", os.path.join(data_path, "output"))
+        self.settings.setdefault("backup_dir", os.path.join(data_path, "backup"))
         
         if self.settings.get("cache_data", True):
             self.settings.setdefault("cache_issues", os.path.join(data_path, "_issues.json"))
@@ -830,6 +833,18 @@ class TreeHoleApp:
 
         # 复制静态文件
         self.copy_file()
-        
+
+        # 生成 backup/备份文件夹
+        # 特别注意：此处 backup/备份文件夹每次 build 都不会清理删除再写入，而是直接写入新文件
+        # 特殊情况1：如果修改了某个 issue 标题那么备份文件夹下会存在两个相同 issue_id 的文件
+        # 特殊情况2：同样 issue_id 和标题，但是修改了内容，那么后面修改的内容会覆盖前面的内容
+        # 特殊情况3：上次 issue_id 已经备份，下次 issue_id 已经关闭，那么备份会一直存在此 issue
+        logger.info(f'backup all posts, items={len(posts)}')
+        for post in posts:
+            filetext = f'# [{post.get("title")}]({post.get("source_url")}) \n\n {post.get("body")}'
+            # 此处执行全部的非法文件名字符过滤
+            filepath = f'{post.get("id")}_{re.sub(r"[\/\\\:\*\?\"\<\>\|\n\r]", "-", post.get("title"))}.md'
+            fwrite(os.path.join(self.settings.get("backup_dir"), filepath), filetext)
+
         logger.info(f'app exited')
 

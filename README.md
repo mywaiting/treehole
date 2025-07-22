@@ -2,6 +2,8 @@
 
 使用 Github Issues 作为后端的微型博客
 
+> Microblog platform based Github issues
+
 设计理念上，该微型博客就是一个巨大的内容列表/内容流，比传统微博/Twitter 多了个内容标题而已，内容部分可长可短，既可写成微博那样的三两句话/三两张图片记录新鲜事，又可用于整理观点写成文章，总之长度不限类型不限，纯粹内容瀑布流
 
 
@@ -58,7 +60,7 @@
     - 需要特别说明的内容，~~可以使用 Issue Pin 置顶内容说明~~
         - 由于 Github REST API 无此接口实现，暂无法实现置顶文章
     - 微型博客**链接结构即内容结构**，无需重复实现归档页面
-        - 程序内置按 daily/monthly/yearly 系列归档页面
+        - 程序内置按 daily/monthly/yearly 实现所有归档页面
 - 没有传统博客 `Category/分类` 概念，没有 `Tags/标签` 概念
     - 只使用 Github Labels 进行内容分类，更细致更方便查找
         - 程序没有针对 Labels 单独页面进行文章内容归类/归类页面
@@ -102,4 +104,22 @@
         - 只输出最新十篇内容，只输出内容摘要
     - 后者用于全站链接/网站地图，方便搜索引擎索引全部内容链接
         - 只输出所有内容唯一链接，不输出任何 daily/monthly/yearly 系列归档页面链接
+
+
+## 备份计划
+
+- 每次重新构建程序均会执行 backup/备份文件夹 生成，方便将数据同步至其他地方
+    - 程序自动默认行为，没有配置项能修改此行为
+- 备份分为两种
+    - 原始 Github API Issues/Comments 接口返回数据，分别保存为 `_issues.json` 和 `_comments.json`
+        - 每次请求 Github API 接口均会重新生成
+    - 所有 Issues 解析生成的 markdown 源文件则保存至 `backup` 目录中，方便直接点击阅读
+        - 此处 backup/备份文件夹每次 build 都不会清理删除再写入，而是直接写入新文件
+- 所有 backup/备份文件夹 内的文件按照 `[ISSUE_ID]_[ISSUE_TITLE].md` 规则生成文件名
+- 执行 backup/备份文件夹 生成，有多种特殊情况
+    - 如果修改了某个 issue 标题那么备份文件夹下会存在两个相同 issue_id 但标题不同的文件
+    - 同样 issue_id 和标题，但是修改了内容，那么**后面修改的内容会覆盖前面的内容**
+    - 上次 issue_id 已经写入备份，但下次 issue_id 已经关闭，那么备份会一直存在此 issue_id 
+        - 网站生成的内容中不会再包含此 issue_id 的内容，但是 backup/备份文件夹 会保留
+- 备份只会保存所有 issues 不会保存对应的 comments
 
