@@ -834,11 +834,14 @@ class TreeHoleApp:
         # 复制静态文件
         self.copy_file()
 
+        # 在 output 目录/根目录输出 CNAME/.nojekyll 目录
+        logger.info(f'export CNAME/.nojekyll to output_dir')
+        cname = urllib.parse.urlparse(self.settings.get("base_url")).hostname
+        fwrite(os.path.join(self.settings.get("output_dir"), "CNAME"), str(cname))
+        fwrite(os.path.join(self.settings.get("output_dir"), ".nojekyll"), "")
+
         # 生成 backup/备份文件夹
         # 特别注意：此处 backup/备份文件夹每次 build 都不会清理删除再写入，而是直接写入新文件
-        # 特殊情况1：如果修改了某个 issue 标题那么备份文件夹下会存在两个相同 issue_id 的文件
-        # 特殊情况2：同样 issue_id 和标题，但是修改了内容，那么后面修改的内容会覆盖前面的内容
-        # 特殊情况3：上次 issue_id 已经备份，下次 issue_id 已经关闭，那么备份会一直存在此 issue
         logger.info(f'backup all posts, items={len(posts)}')
         for post in posts:
             filetext = f'# [{post.get("title")}]({post.get("source_url")}) \n\n {post.get("body")}'

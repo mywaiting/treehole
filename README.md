@@ -51,6 +51,8 @@
     - `app.css` 微型博客通用样式列表
         - 极其简洁/极简的全局/通用 css 代码实现，支持自动亮暗样式切换
     - `app.js` 微型博客脚本支持，仅用于评论功能支持
+- 自动使用 `base_url` 对应的 `hostname` 生成对应的 `CNAME` 文件
+    - 程序会自动生成 `.nojekyll` 以避免 Github Pages 自动使用 Jekyll 生成网站内容
 
 
 ## 为什么不
@@ -112,7 +114,7 @@
     - 程序自动默认行为，没有配置项能修改此行为
 - 备份分为两种
     - 原始 Github API Issues/Comments 接口返回数据，分别保存为 `_issues.json` 和 `_comments.json`
-        - 每次请求 Github API 接口均会重新生成
+        - **调试状态下**，每次请求 Github API 接口均会重新生成
     - 所有 Issues 解析生成的 markdown 源文件则保存至 `backup` 目录中，方便直接点击阅读
         - 此处 backup/备份文件夹每次 build 都不会清理删除再写入，而是直接写入新文件
 - 所有 backup/备份文件夹 内的文件按照 `[ISSUE_ID]_[ISSUE_TITLE].md` 规则生成文件名
