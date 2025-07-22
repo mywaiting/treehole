@@ -62,7 +62,7 @@
             <small><time datetime="{{ post.get('created_at') }}">{{ post.get('created_at') }}</time></small>
         </header>
         <p class="summary">{% raw post.get('summary') %}</p>
-        <p>[... <a href="{{ post.get('permanent_url') }}">more</a>]</p>
+        <p>[... <a href="{{ post.get('permanent_url') }}">{{ _('more') }}</a>]</p>
     </article>
     {% end %}
 </div>
@@ -84,7 +84,7 @@
         </header>
         {% end %}
         {% if post.get('summary') %}<p class="summary">{% raw post.get('summary') %}</p>{% end %}
-        {% if post.get('summary') %}<p>[... <a href="{{ post.get('permanent_url') }}">more</a>]</p>{% end %}
+        {% if post.get('summary') %}<p>[... <a href="{{ post.get('permanent_url') }}">{{ _('more') }}</a>]</p>{% end %}
     </article>
     {% end %}
 </div>

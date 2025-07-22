@@ -12,7 +12,7 @@ from .treehole import TreeHoleApp
 
 define("debug", type=bool, default=True)
 define("config", type=str)
-define("default_locale", type=str, default="zh")
+define("default_locale", type=str, default="en")
 define("locale_domain", type=str, default="treehole")
 define("base_url", type=str, default="https://treehole.io")
 define("site_title", type=str, default="Treehole")
@@ -52,6 +52,7 @@ def main():
     # loaded gettext/locale translations
     tornado.locale.load_gettext_translations(os.path.join(base_dir, "locale"), options.locale_domain)
     tornado.locale.set_default_locale(options.default_locale)
+    # logger.info(f'support locales={tornado.locale.get_supported_locales()}, default_locale={options.default_locale}')
 
     app = TreeHoleApp(**options.as_dict())
     app.run()

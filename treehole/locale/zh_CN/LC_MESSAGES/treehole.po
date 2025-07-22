@@ -1,0 +1,87 @@
+# Chinese translations for Treehole package.
+# Copyright (C) 2025 THE Treehole'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the Treehole package.
+# mywaiting <hi@mywaiting.com>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Treehole VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-07-22 12:35+0000\n"
+"PO-Revision-Date: 2025-07-22 10:51+0000\n"
+"Last-Translator: mywaiting <hi@mywaiting.com>\n"
+"Language-Team: Chinese (simplified) <i18n-zh@googlegroups.com>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: templates/base.html.$generated$.py:84 templates/list.html.$generated$.py:428
+#: templates/post.html.$generated$.py:429
+#, python-format
+msgid ""
+"Powered By %(treehole_link)s with %(github_issues_link)s, Drived by "
+"%(github_pages_link)s"
+msgstr ""
+"由 %(treehole_link)s 强力驱动，内容来自 %(github_issues_link)s，托管在 "
+"%(github_pages_link)s"
+
+#: templates/base.html.$generated$.py:94 templates/list.html.$generated$.py:438
+#: templates/post.html.$generated$.py:439
+msgid "Feedmap"
+msgstr "订阅"
+
+#: templates/base.html.$generated$.py:100
+#: templates/list.html.$generated$.py:444
+#: templates/post.html.$generated$.py:445
+msgid "Sitemap"
+msgstr "网站地图"
+
+#: templates/list.html.$generated$.py:242
+#: templates/list.html.$generated$.py:333
+msgid "more"
+msgstr "阅读全文"
+
+#: templates/post.html.$generated$.py:160
+msgid "Labels"
+msgstr "标签"
+
+#: templates/post.html.$generated$.py:180
+msgid "Reactions"
+msgstr "表情回应"
+
+#: templates/post.html.$generated$.py:210
+msgid "Nav"
+msgstr "导航"
+
+#: templates/post.html.$generated$.py:218
+msgid "Next Post"
+msgstr "下一篇"
+
+#: templates/post.html.$generated$.py:240
+msgid "Previous Post"
+msgstr "上一篇"
+
+#: templates/post.html.$generated$.py:264
+msgid "Related Posts"
+msgstr "相关文章"
+
+#: templates/post.html.$generated$.py:288
+msgid "Comments"
+msgstr "评论"
+
+#: templates/post.html.$generated$.py:300
+msgid "New Comment"
+msgstr "发表评论"
+
+#: templates/post.html.$generated$.py:308
+msgid "Oldest First"
+msgstr "按最旧排序"
+
+#: templates/post.html.$generated$.py:318
+msgid "Newest First"
+msgstr "按最新排序"
+
+#: templates/post.html.$generated$.py:326
+msgid "New Reaction"
+msgstr "回应表情"

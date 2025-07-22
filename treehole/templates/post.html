@@ -26,7 +26,7 @@
     <footer>
         {% if post.get('labels') %}
         <section>
-            <h5>Labels</h5>
+            <h5>{{ _('Labels') }}</h5>
             <ul class="menu">
                 {% for label in post.get('labels') %}
                 <li class="ball">{{ label.get('name') }}</li>
@@ -36,7 +36,7 @@
         {% end %}
         {% if any(post.get('reactions').values()) %}
         <section>
-            <h5>Reactions</h5>
+            <h5>{{ _('Reactions') }}</h5>
             <ul class="menu">
                 {% for emoji, count in post.get('reactions').items() %}
                     {% if count %}<li class="ball">{{ github_reactions(emoji) }} +{{ count }}</li>{% end %}
@@ -46,16 +46,16 @@
         {% end %}
         {% if prev_post or next_post %}
         <section>
-            <h5>Nav</h5>
+            <h5>{{ _('Nav') }}</h5>
             <nav>
-                {% if next_post %}<p>Next Post: <a href="{{ next_post.get('permanent_url') }}">{{ next_post.get('title') }}</a></p>{% end %}
-                {% if prev_post %}<p>Previous Post: <a href="{{ prev_post.get('permanent_url') }}">{{ prev_post.get('title') }}</a></p>{% end %}
+                {% if next_post %}<p>{{ _('Next Post') }}: <a href="{{ next_post.get('permanent_url') }}">{{ next_post.get('title') }}</a></p>{% end %}
+                {% if prev_post %}<p>{{ _('Previous Post') }}: <a href="{{ prev_post.get('permanent_url') }}">{{ prev_post.get('title') }}</a></p>{% end %}
             </nav>
         </section>
         {% end %}
         {% if related_posts %}
         <section>
-            <h5>Related Posts</h5>
+            <h5>{{ _('Related Posts') }}</h5>
             <ul>
                 {% for related_post in related_posts %}
                 <li><a href="{{ related_post.get('permanent_url') }}">{{ related_post.get('title') }}</a></li>
@@ -66,12 +66,12 @@
     </footer>
 </article>
 <div class="comments">
-    <h5>Comments ({{ len(comments) }})</h5>
+    <h5>{{ _('Comments') }} ({{ len(comments) }})</h5>
     <menu class="menu">
-        <li class="item"><button id="new-comment">+ New Comment</button></li>
-        {% if comments %}<li class="item"><button id="oldest-first">&lt; Oldest First</button></li>{% end %}
-        {% if comments %}<li class="item"><button id="newest-first">Newest First &gt;</button></li>{% end %}
-        <li class="item"><button id="new-reaction">+ New Reaction</button></li>
+        <li class="item"><button id="new-comment">+ {{ _('New Comment') }}</button></li>
+        {% if comments %}<li class="item"><button id="oldest-first">&lt; {{ _('Oldest First') }}</button></li>{% end %}
+        {% if comments %}<li class="item"><button id="newest-first">{{ _('Newest First') }} &gt;</button></li>{% end %}
+        <li class="item"><button id="new-reaction">+ {{ _('New Reaction') }}</button></li>
     </menu>
     {% for comment in comments %}
     <article class="comment" id="comment-{{ comment.get('id') }}">
