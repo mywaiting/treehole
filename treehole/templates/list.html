@@ -24,7 +24,7 @@
         <footer>
             {% if post.get('labels') %}
             <section>
-                <h5>Labels</h5>
+                <h5>{{ _('Labels') }}</h5>
                 <ul class="menu">
                     {% for label in post.get('labels') %}
                     <li class="ball">{{ label.get('name') }}</li>
@@ -34,7 +34,7 @@
             {% end %}
             {% if any(post.get('reactions').values()) %}
             <section>
-                <h5>Reactions</h5>
+                <h5>{{ _('Reactions') }}</h5>
                 <ul class="menu">
                     {% for emoji, count in post.get('reactions').items() %}
                         {% if count %}<li class="ball">{{ github_reactions(emoji) }} +{{ count }}</li>{% end %}
