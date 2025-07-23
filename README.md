@@ -53,8 +53,8 @@
     - `app.css` 微型博客通用样式列表
         - 极其简洁/极简的全局/通用 css 代码实现，支持自动亮暗样式切换
     - `app.js` 微型博客脚本支持，仅用于评论功能支持
-- 自动使用 `base_url` 对应的 `hostname` 生成对应的 `CNAME` 文件
-    - 程序会自动生成 `.nojekyll` 以避免 Github Pages 自动使用 Jekyll 生成网站内容
+- 程序自动使用 `base_url` 对应的 `hostname` 生成对应的 `CNAME` 文件
+- 程序会自动生成 `.nojekyll` 以避免 Github Pages 自动使用 Jekyll 生成网站内容
 
 
 ## 为什么不

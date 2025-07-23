@@ -4,13 +4,11 @@
 
 import datetime
 import html.parser
-import io
 import os
 import os.path
 import re
 import string
 import unicodedata
-import xml.etree.ElementTree as ET
 
 
 
