@@ -1,0 +1,66 @@
+[project]
+name = "treehole"
+authors = [
+    { name="Heng<mywaiting>", email="hi@mywaiting.com" }
+]
+description = "Microblog platform based Github issues"
+readme = "README.md"
+requires-python = ">= 3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    # install pycurl need gcc compiler but docker alpine use musl
+    "pycurl==7.45.3",
+    "tornado==6.4.1",
+    "mistune==3.1.3",
+]
+dynamic = ["version"] # for PEP 621, dynamic version
+
+
+[project.scripts]
+treehole = "treehole:__main__"  # see https://stackoverflow.com/a/27785121
+
+
+[project.urls]
+Homepage = "https://github.com/mywaiting/treehole"
+Issues = "https://github.com/mywaiting/treehole/issues"
+
+
+[project.optional-dependencies]
+doc = [
+    "sphinx",
+    "myst-parser",
+]
+
+
+[build-system]
+requires = ["setuptools>= 64", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = [
+    "treehole*", # see https://stackoverflow.com/a/75881304
+    "tests*",
+    "docs*",
+]
+exclude = [
+    "treehole/static", 
+    "treehole/locale", 
+    "treehole/templates"
+]
+
+[tool.setuptools.package-data]
+"treehole" = [
+    "locale/**/*",    # treehole/locale
+    "static/**/*",    # treehole/static
+    "templates/**/*", # treehole/templates
+]
+
+[tool.setuptools_scm]
+version_file = "treehole/__version__.py"
+
