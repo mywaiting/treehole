@@ -104,14 +104,11 @@ msginit --locale=zh_TW.UTF-8 --input=./locale/messages.pot --output=./locale/zh_
 
 ```bash
 
-# zh_CN
-msgmerge --update ./locale/zh_CN/LC_MESSAGES/treehole.po ./locale/messages.pot
-
-# zh_HK
-msgmerge --update ./locale/zh_HK/LC_MESSAGES/treehole.po ./locale/messages.pot
-
-# zh_TW
-msgmerge --update ./locale/zh_TW/LC_MESSAGES/treehole.po ./locale/messages.pot
+# 遍历并一次性处理所有的语言的翻译合并
+find ./locale -path "*/LC_MESSAGES/treehole.po" | while read -r PO_FILE; do
+  echo "Merging ./locale/messages.pot with $POT_FILE"
+  msgmerge --update --backup=none "$PO_FILE" ./locale/messages.pot
+done
 
 ```
 
@@ -138,14 +135,12 @@ msgstr "再见"
 
 ```bash
 
-# zh_CN
-msgfmt ./locale/zh_CN/LC_MESSAGES/treehole.po -o  ./locale/zh_CN/LC_MESSAGES/treehole.mo
-
-# zh_HK
-msgfmt ./locale/zh_HK/LC_MESSAGES/treehole.po -o  ./locale/zh_HK/LC_MESSAGES/treehole.mo
-
-# zh_TW
-msgfmt ./locale/zh_TW/LC_MESSAGES/treehole.po -o  ./locale/zh_TW/LC_MESSAGES/treehole.mo
+# 遍历 ./locale 文件夹下面所有名为 treehole.po 的文件并且原样路径编译为对应的 .mo 文件
+find ./locale -name 'treehole.po' | while read -r po_file; do
+  mo_file="${po_file%.po}.mo"
+  echo "Compiling $po_file to $mo_file"
+  msgfmt "$po_file" -o "$mo_file"
+done
 
 ```
 
