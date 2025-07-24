@@ -1,0 +1,58 @@
+# 
+# 用于编译整个项目并打包发布为代码包
+# 特别注意：项目使用 GNU Gettext 需要在打包时编译对应的多语言发布文件
+# 
+
+name: Build Python Package and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # 仅在以 v 开头的 tag 上触发，如 v1.0, v2.3.1
+
+permissions:
+  contents: write  # 用于上传 Release 资产
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'  # 指定为最新的 Python 3.x 稳定版本
+    
+    - name: Install GNU gettext for msgfmt
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gettext
+
+    - name: Compile .po to .mo using GNU Gettext
+      run: |
+        find ./treehole/locale -name 'treehole.po' | while read -r po_file; do
+          mo_file="${po_file%.po}.mo"
+          echo "Compiling $po_file to $mo_file"
+          msgfmt "$po_file" -o "$mo_file"
+        done
+
+    - name: Upgrade pip and install build tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install build setuptools setuptools-scm wheel
+
+    - name: Build the project
+      run: python -m build
+
+    - name: Upload artifacts to GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          dist/*.tar.gz
+          dist/*.whl
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
