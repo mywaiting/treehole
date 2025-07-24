@@ -645,11 +645,12 @@ class TreeHoleApp:
         self.settings.setdefault("static_path", os.path.join(base_dir, "static"))
 
         data_path = self.settings.get("data_path")
-        if not os.path.exists(data_path):
-            os.makedirs(data_path, exist_ok=True)
+        os.makedirs(data_path, exist_ok=True)
 
         self.settings.setdefault("output_dir", os.path.join(data_path, "output"))
         self.settings.setdefault("backup_dir", os.path.join(data_path, "backup"))
+        os.makedirs(self.settings.get("output_dir"), exist_ok=True)
+        os.makedirs(self.settings.get("backup_dir"), exist_ok=True)
         
         if self.settings.get("cache_data", True):
             self.settings.setdefault("cache_issues", os.path.join(data_path, "_issues.json"))
