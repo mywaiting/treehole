@@ -23,6 +23,19 @@ pip install treehole-0.1.tar.gz
 
 > 注意：上述命令不会安装 `optional-dependencies` 依赖，需要使用 `pip install treehole-0.1.tar.gz[doc]` 这样显式指定的命令才会安装对应的 `doc` 文档编译类依赖
 
+**需要特别注意的是**，由于 `treehole` 安装需要 `tornado` 包，而 `tornado` 需要 `pycurl` 的支持
+
+而且 `pycurl` 需要 `libcurl` 的支持，需要操作系统上安装对应的二进制包支持
+
+如果你使用 Ubuntu/Debian 你可以考虑使用以下命令安装对应的二进制包支持，其他 Linux/Windows/Mac 请自行搜索解决
+
+```bash
+
+sudo apt-get update
+sudo apt-get install -y libcurl4 libcurl4-openssl-dev libssl-dev
+
+```
+
 安装完后，直接在 bash 中使用
 
 ```bash
