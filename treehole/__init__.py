@@ -4,6 +4,7 @@
 
 """Microblog platform based Github issues."""
 
+from .__app__ import main
 from .__version__ import (
     version,
     version_tuple,
