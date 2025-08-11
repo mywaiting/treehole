@@ -1,16 +1,16 @@
 /*! (c) mywaiting */
 
-const domcontent_loaded_callbacks = []
-const on_domcontent_loaded = callback => {
+const dom_content_loaded_callbacks = []
+const on_dom_content_loaded = callback => {
     if (document.readyState === 'loading') {
-        if (!domcontent_loaded_callbacks.length) {
+        if (!dom_content_loaded_callbacks.length) {
             document.addEventListener('DOMContentLoaded', () => {
-                for (const callback of domcontent_loaded_callbacks) {
+                for (const callback of dom_content_loaded_callbacks) {
                     callback()
                 }
             })
         }
-        domcontent_loaded_callbacks.push(callback)
+        dom_content_loaded_callbacks.push(callback)
     } else {
         callback()
     }
@@ -25,7 +25,7 @@ const new_comment = (btn = "new-comment") => {
         window.open(url)
     })
 }
-on_domcontent_loaded(new_comment)
+on_dom_content_loaded(new_comment)
 
 
 // sort_comments
@@ -54,8 +54,8 @@ const sort_comments_newest_first = (btn = "newest-first") => {
         sort_comments(".comments", "desc")
     })
 }
-on_domcontent_loaded(sort_comments_oldest_first)
-on_domcontent_loaded(sort_comments_newest_first)
+on_dom_content_loaded(sort_comments_oldest_first)
+on_dom_content_loaded(sort_comments_newest_first)
 
 
 // new_reaction
@@ -66,5 +66,5 @@ const new_reaction = (btn = "new-reaction") => {
         window.open(url)
     })
 }
-on_domcontent_loaded(new_reaction)
+on_dom_content_loaded(new_reaction)
 
