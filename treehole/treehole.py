@@ -711,10 +711,11 @@ class TreeHoleApp:
                     comments.append(comment)
                 return comments
 
-            # 异步函数转同步执行，更加方便
-            loop = asyncio.get_event_loop()
-            issues = loop.run_until_complete(get_repo_issues())
-            comments = loop.run_until_complete(get_issue_comments())
+            # 注意：此处使用 asyncio.get_event_loop() 在 3.12 及更高版本中，
+            #           如果当前线程没有正在运行的事件循环，调用该方法会直接抛出 RuntimeError
+            # 使用 asyncio.run 自动创建和管理生命周期
+            issues = asyncio.run(get_repo_issues())
+            comments = asyncio.run(get_issue_comments())
 
             # 调试状态下缓存数据
             # 注意：此处是缓存 Github 接口返回的原始数据，方便后续 debug 使用
