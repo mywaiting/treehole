@@ -48,11 +48,11 @@ include = [
     "tests*",
     "docs*",
 ]
-exclude = [
-    "treehole/static", 
-    "treehole/locale", 
-    "treehole/templates"
-]
+# exclude = [
+#     "treehole/static", 
+#     "treehole/locale", 
+#     "treehole/templates"
+# ]
 
 [tool.setuptools.package-data]
 "treehole" = [
