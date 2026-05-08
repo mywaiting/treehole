@@ -15,6 +15,7 @@ import xml.etree.ElementTree as ET
 import mistune
 import tornado.locale
 import tornado.template
+import tornado.web
 
 from .github import GithubClient, GithubIssue, GithubComment, github_reactions
 from .utils import H1AndImageExtractor, only_english, from_iso8601_date, slugify, fwrite
@@ -855,4 +856,18 @@ class TreeHoleApp:
             fwrite(os.path.join(self.settings.get("backup_dir"), filepath), filetext)
 
         logger.info(f'app exited')
+    
+    def preview(self, port=8080, bind="0.0.0.0"):
+        logger.info(f'prepare preview server')
 
+        async def run_preview():
+            app = tornado.web.Application([
+                (r"/", tornado.web.RedirectHandler, { "url": "/index.html" }),
+                (r"/(.*)", tornado.web.StaticFileHandler, { "path": self.settings.get("output_dir") })
+            ])
+            app.listen(port, address=bind)
+            logger.info(f'preview server started at http://{bind}:{port}')
+
+            await asyncio.Event().wait()
+        
+        asyncio.run(run_preview())

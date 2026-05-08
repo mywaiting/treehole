@@ -10,17 +10,18 @@ from .treehole import TreeHoleApp
 
 
 
-define("debug", type=bool, default=True)
-define("config", type=str)
-define("default_locale", type=str, default="en")
-define("locale_domain", type=str, default="treehole")
-define("base_url", type=str, default="https://treehole.io")
-define("site_title", type=str, default="Treehole")
-define("site_desc", type=str, default="Microblog platform based Github issues")
-define("data_path", type=str, default="./data")
-define("github_owner", type=str)
-define("github_repo", type=str)
-define("github_token", type=str)
+define("debug", type=bool, default=True, help="debug flag for treehole")
+define("config", type=str, help="local config file path")
+define("default_locale", type=str, default="en", help="default locale for i18n")
+define("locale_domain", type=str, default="treehole", help="default domain for i18n")
+define("base_url", type=str, default="https://treehole.io", help="base url for the website, include http[s]://")
+define("site_title", type=str, default="Treehole", help="the title for the website")
+define("site_desc", type=str, default="Microblog platform based Github issues", help="the description for the website")
+define("data_path", type=str, default="./data", help="data path for building the website")
+define("github_owner", type=str, help="github owner")
+define("github_repo", type=str, help="github repo")
+define("github_token", type=str, help="github api access_token")
+define("preview", type=bool, default=False, help="run preview server after building")
 
 
 
@@ -57,3 +58,6 @@ def main():
     app = TreeHoleApp(**options.as_dict())
     app.run()
 
+    # 构建完成是否启用 Preview 预览服务器，方便直接预览整个网站实现
+    if options.preview:
+        app.preview()
