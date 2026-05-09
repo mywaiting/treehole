@@ -443,8 +443,8 @@ class PostArchive:
         # 遍历全部处理好的 posts 数据嵌套结构，按天汇总输出所有的 post_archive 页面数据
         for i, value in enumerate(posts):
             post = posts[i]
-            prev_post = posts[i-1] if i > 0 else None              # 上一个文章/按当前文章顺序
-            next_post = posts[i+1] if i < len(posts) - 1 else None # 下一个文章/按当前文章顺序
+            next_post = posts[i-1] if i > 0 else None              # 时间排序：下一个文章/按当前文章顺序
+            prev_post = posts[i+1] if i < len(posts) - 1 else None # 时间排序：上一个文章/按当前文章顺序
             # 得到当前文章，根据 labels 相似度计算的结果
             related = similarity_maps.get(post.get("id"), [])
             related_sorted = sorted(related, key=lambda x: x[1], reverse=True)[0:3] # 此处每次取三篇相似文章
@@ -861,19 +861,12 @@ class TreeHoleApp:
         logger.info(f'prepare preview server')
 
         async def run_preview():
-            class RedirectWithIndexHandler(tornado.web.RequestHandler):
-                def get(self, path):
-                    if not path.endswith("/index.html"):
-                        return self.redirect(f"/{path}/index.html")
-                    
-                    return self.redirect(path)
-
             app = tornado.web.Application([
-                (r"/", RedirectWithIndexHandler),                     # index
-                (r"/(.*)/", RedirectWithIndexHandler),                # yearly
-                (r"/(.*)/(.*)/", RedirectWithIndexHandler),           # monthly
-                (r"/(.*)/(.*)/(.*)/", RedirectWithIndexHandler),      # daily
-                (r"/(.*)/(.*)/(.*)/(.*)/", RedirectWithIndexHandler), # post
+                (r"/", tornado.web.RedirectHandler, { "url": "/index.html" }),                                     # index
+                (r"/(.*)/", tornado.web.RedirectHandler, { "url": "/{0}/index.html" }),                            # yearly
+                (r"/(.*)/(.*)/", tornado.web.RedirectHandler, { "url": "/{0}/{1}/index.html" }),                   # monthly
+                (r"/(.*)/(.*)/(.*)/", tornado.web.RedirectHandler, { "url": "/{0}/{1}/{2}/index.html" }),          # daily
+                (r"/(.*)/(.*)/(.*)/(.*)/", tornado.web.RedirectHandler, { "url": "/{0}/{1}/{2}/{4}/index.html" }), # post
                 (r"/(.*)", tornado.web.StaticFileHandler, { "path": self.settings.get("output_dir") })
             ])
             app.listen(port, address=bind)
