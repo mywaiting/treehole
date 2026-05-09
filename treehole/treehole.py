@@ -861,8 +861,19 @@ class TreeHoleApp:
         logger.info(f'prepare preview server')
 
         async def run_preview():
+            class RedirectWithIndexHandler(tornado.web.RequestHandler):
+                def get(self, path):
+                    if not path.endswith("/index.html"):
+                        return self.redirect(f"/{path}/index.html")
+                    
+                    return self.redirect(path)
+
             app = tornado.web.Application([
-                (r"/", tornado.web.RedirectHandler, { "url": "/index.html" }),
+                (r"/", RedirectWithIndexHandler),                     # index
+                (r"/(.*)/", RedirectWithIndexHandler),                # yearly
+                (r"/(.*)/(.*)/", RedirectWithIndexHandler),           # monthly
+                (r"/(.*)/(.*)/(.*)/", RedirectWithIndexHandler),      # daily
+                (r"/(.*)/(.*)/(.*)/(.*)/", RedirectWithIndexHandler), # post
                 (r"/(.*)", tornado.web.StaticFileHandler, { "path": self.settings.get("output_dir") })
             ])
             app.listen(port, address=bind)
