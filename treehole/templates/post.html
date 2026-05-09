@@ -23,55 +23,57 @@
         <small><time datetime="{{ post.get('created_at') }}">{{ post.get('created_at') }}</time></small>
     </header>
     {% raw post.get('body_html') %}
-    <footer>
-        {% if post.get('labels') %}
-        <section>
-            <h5>{{ _('Labels') }}</h5>
-            <ul class="menu">
+    <footer class="meta">
+        <dl>
+            {% if post.get('labels') %}
+            <dt>{{ _('Labels') }}</dt>
+            <dd>
                 {% for label in post.get('labels') %}
-                <li class="ball">{{ label.get('name') }}</li>
+                <span>{{ label.get('name') }}<small>+1 </small></span>
                 {% end %}
-            </ul>
-        </section>
-        {% end %}
-        {% if any(post.get('reactions').values()) %}
-        <section>
-            <h5>{{ _('Reactions') }}</h5>
-            <ul class="menu">
+            </dd>
+            {% end %}
+            {% if any(post.get('reactions').values()) %}
+            <dt>{{ _('Reactions') }}</dt>
+            <dd>
                 {% for emoji, count in post.get('reactions').items() %}
-                    {% if count %}<li class="ball">{{ github_reactions(emoji) }} +{{ count }}</li>{% end %}
+                    {% if count %}<span>{{ github_reactions(emoji) }}<small>+{{ count }}</small></span>{% end %}
                 {% end %}
-            </ul>
-        </section>
-        {% end %}
-        {% if prev_post or next_post %}
-        <section>
-            <h5>{{ _('Nav') }}</h5>
-            <nav>
-                {% if next_post %}<p>{{ _('Next Post') }}: <a href="{{ next_post.get('permanent_url') }}">{{ next_post.get('title') }}</a></p>{% end %}
-                {% if prev_post %}<p>{{ _('Previous Post') }}: <a href="{{ prev_post.get('permanent_url') }}">{{ prev_post.get('title') }}</a></p>{% end %}
-            </nav>
-        </section>
-        {% end %}
-        {% if related_posts %}
-        <section>
-            <h5>{{ _('Related Posts') }}</h5>
-            <ul>
+            </dd>
+            {% end %}
+            {% if next_post %}
+            <dt>{{ _('Next Post') }}</dt>
+            <dd>
+                <a href="{{ next_post.get('permanent_url') }}">{{ next_post.get('title') }}</a><br>
+                <small>{{ next_post.get('summary') }}...</small>
+            </dd>
+            {% end %}
+            {% if prev_post %}
+            <dt>{{ _('Previous Post') }}</dt>
+            <dd>
+                <a href="{{ prev_post.get('permanent_url') }}">{{ prev_post.get('title') }}</a><br>
+                <small>{{ prev_post.get('summary') }}...</small>
+            </dd>
+            {% end %}
+            {% if related_posts %}
+            <dt>{{ _('Related Posts') }}</dt>
+            <dd>
                 {% for related_post in related_posts %}
-                <li><a href="{{ related_post.get('permanent_url') }}">{{ related_post.get('title') }}</a></li>
+                <a href="{{ related_post.get('permanent_url') }}">{{ related_post.get('title') }}</a><br>
+                <small>{{ related_post.get('summary') }}...</small>
                 {% end %}
-            </ul>
-        </section>
-        {% end %}
+            </dd>
+            {% end %}
+        </dl>
     </footer>
 </article>
 <div class="comments">
-    <h5>{{ _('Comments') }} ({{ len(comments) }})</h5>
-    <menu class="menu">
-        <li class="item"><button id="new-comment">+ {{ _('New Comment') }}</button></li>
-        {% if comments %}<li class="item"><button id="oldest-first">&lt; {{ _('Oldest First') }}</button></li>{% end %}
-        {% if comments %}<li class="item"><button id="newest-first">{{ _('Newest First') }} &gt;</button></li>{% end %}
-        <li class="item"><button id="new-reaction">+ {{ _('New Reaction') }}</button></li>
+    <h2>{{ _('Comments') }} ({{ len(comments) }})</h2>
+    <menu>
+        <button id="new-comment">+ {{ _('New Comment') }}</button>
+        {% if comments %}<button id="oldest-first">&lt; {{ _('Oldest First') }}</button>{% end %}
+        {% if comments %}<button id="newest-first">{{ _('Newest First') }} &gt;</button>{% end %}
+        <button id="new-reaction">+ {{ _('New Reaction') }}</button>
     </menu>
     {% for comment in comments %}
     <article class="comment" id="comment-{{ comment.get('id') }}">
@@ -84,11 +86,9 @@
         {% raw comment.get('body_html') %}
         {% if any(comment.get('reactions').values()) %}
         <footer>
-            <ul class="menu">
-                {% for emoji, count in comment.get('reactions').items() %}
-                    {% if count %}<li class="ball">{{ github_reactions(emoji) }} +{{ count }}</li>{% end %}
-                {% end %}
-            </ul>
+            {% for emoji, count in comment.get('reactions').items() %}
+                {% if count %}<small>{{ github_reactions(emoji) }}+{{ count }}</small>{% end %}
+            {% end %}
         </footer>
         {% end %}
     </article>

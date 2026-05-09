@@ -21,27 +21,25 @@
             <small><time datetime="{{ post.get('created_at') }}">{{ post.get('created_at') }}</time></small>
         </header>
         {% raw post.get('body_html') %}
-        <footer>
-            {% if post.get('labels') %}
-            <section>
-                <h5>{{ _('Labels') }}</h5>
-                <ul class="menu">
+        <footer class="meta">
+            <dl>
+                {% if post.get('labels') %}
+                <dt>{{ _('Labels') }}</dt>
+                <dd>
                     {% for label in post.get('labels') %}
-                    <li class="ball">{{ label.get('name') }}</li>
+                    <span>{{ label.get('name') }}<small>+1 </small></span>
                     {% end %}
-                </ul>
-            </section>
-            {% end %}
-            {% if any(post.get('reactions').values()) %}
-            <section>
-                <h5>{{ _('Reactions') }}</h5>
-                <ul class="menu">
+                </dd>
+                {% end %}
+                {% if any(post.get('reactions').values()) %}
+                <dt>{{ _('Reactions') }}</dt>
+                <dd>
                     {% for emoji, count in post.get('reactions').items() %}
-                        {% if count %}<li class="ball">{{ github_reactions(emoji) }} +{{ count }}</li>{% end %}
+                        {% if count %}<span>{{ github_reactions(emoji) }}<small>+{{ count }}</small></span>{% end %}
                     {% end %}
-                </ul>
-            </section>
-            {% end %}
+                </dd>
+                {% end %}
+            </dl>
         </footer>
     </article>
     {% end %}
