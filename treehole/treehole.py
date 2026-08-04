@@ -21,10 +21,24 @@ from .github import GithubClient, GithubIssue, GithubComment, github_reactions
 from .utils import H1AndImageExtractor, only_english, from_iso8601_date, slugify, fwrite
 
 
-
 base_dir = os.path.dirname(__file__)
 logger = logging.getLogger("treehole")
-
+markdown = mistune.create_markdown(plugins=[
+    "strikethrough", # 默认开启 mistune 所有插件功能支持
+    "footnotes", 
+    "table",
+    "url",
+    "task_lists",
+    "def_list",
+    "abbr",
+    "mark",
+    "insert",
+    "superscript",
+    "subscript",
+    "math",
+    "ruby",
+    "spoiler"
+])
 
 
 # 
@@ -43,7 +57,7 @@ class TreeHolePost(dict):
         self["body"] = post.get("body")
         # 由于 Github 返回的 body_html 图片部分无法使用
         # 此处只能本地渲染 markdown 文档输出
-        self["body_html"] = mistune.markdown(post.get("body"))
+        self["body_html"] = markdown(post.get("body"))
 
         # 抽取 body_html 中全部的 h1/img 内容作为标题/头图的参考
         parser = H1AndImageExtractor()

@@ -11,7 +11,6 @@ import string
 import unicodedata
 
 
-
 def fread(filepath):
     with open(filepath, "rt") as fd:
         return fd.read()
